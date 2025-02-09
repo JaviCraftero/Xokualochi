@@ -47,7 +47,7 @@
           
             // Initialize Firebase
             firebase.initializeApp(firebaseConfig);
-            const database = firrebase.database();
+            const database = firebase.database();
 
             database.ref('datos').on('value', (snapshot) => {
                 const data = snapshot.val();
