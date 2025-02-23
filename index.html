@@ -23,10 +23,12 @@
         <link rel="icon" type="image/png" sizes="16x16"
             href="assets/img/favicon-16x16.png">
         <link rel="manifest" href="assets/img/site.webmanifest">
-        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+        <script
+            src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+        <script
+            src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
         <script type="module">
-            // Import the functions you need from the SDKs you need
+            // Import the functions from firebase
             import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
             import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-analytics.js";
             // TODO: Add SDKs for Firebase products that you want to use
@@ -216,13 +218,33 @@
             <div id="layoutSidenav_content">
                 <main>
                     <div class="container-fluid px-4">
+
                         <h1 class="mt-4">Dashboard</h1>
                         <ol class="breadcrumb mb-4">
-                            <li class="breadcrumb-item active">Dashboard</li>
+                            <li
+                                class="breadcrumb-item active">Dashboard</li>
                         </ol>
-                        <h1>Datos del Sensor</h1>
-    <p>Salida (DAC): <span id="salida">0</span></p>
-    <p>Entrada (ADC): <span id="entrada">0</span></p>
+                        <!-- Sección de Cámara -->
+                        <div class="row mt-4">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-camera me-1"></i> Vista
+                                        en Tiempo Real
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <img id="camera-image"
+                                            src="https://raw.githubusercontent.com/TU_USUARIO/TU_REPO/main/foto.jpg"
+                                            class="img-fluid"
+                                            alt="Live feed"
+                                            style="max-height: 500px;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h1>Datos del Sensor</h1>
+                            <p>Salida (DAC): <span id="salida">0</span></p>
+                            <p>Entrada (ADC): <span id="entrada">0</span></p>
                         </div>
                         <div class="row">
                             <div class="col-xl-3 col-md-6">
@@ -826,6 +848,13 @@
             src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"
             crossorigin="anonymous"></script>
         <script src="js/datatables-simple-demo.js"></script>
-        
+        <script>
+            // Actualizar imagen cada 5 segundos (evitar caché)
+            setInterval(() => {
+                const img = document.getElementById('camera-image');
+                img.src = `https://raw.githubusercontent.com/JaviCraftero/Xokualochi/main/foto.jpg?t=${Date.now()}`;
+            }, 5000);
+        </script>
+
     </body>
 </html>
