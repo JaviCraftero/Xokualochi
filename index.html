@@ -234,7 +234,7 @@
                                     </div>
                                     <div class="card-body text-center">
                                         <img id="camera-image"
-                                            src="https://raw.githubusercontent.com/TU_USUARIO/TU_REPO/main/foto.jpg"
+                                            src="https://raw.githubusercontent.com/JaviCraftero/Xokualochi/main/fotos/foto_{timestamp}.jpg"
                                             class="img-fluid"
                                             alt="Live feed"
                                             style="max-height: 500px;">
@@ -851,9 +851,10 @@
         <script>
             // Actualizar imagen cada 5 segundos (evitar caché)
             setInterval(() => {
-                const img = document.getElementById('camera-image');
-                img.src = `https://raw.githubusercontent.com/JaviCraftero/Xokualochi/main/foto.jpg?t=${Date.now()}`;
-            }, 5000);
+                const timestamp = Date.now();
+                document.getElementById('liveImage').src = 
+                  `https://raw.githubusercontent.com/JaviCraftero/Xokualochi/main/fotos/foto_${timestamp}.jpg`;
+              }, 5000);
         </script>
 
     </body>
