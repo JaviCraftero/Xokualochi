@@ -233,11 +233,7 @@
                                         en Tiempo Real
                                     </div>
                                     <div class="card-body text-center">
-                                        <img id="camera-image"
-                                            src="https://raw.githubusercontent.com/JaviCraftero/Xokualochi/main/fotos/foto_{timestamp}.jpg"
-                                            class="img-fluid"
-                                            alt="Live feed"
-                                            style="max-height: 500px;">
+                                        <img src="https://res.cloudinary.com/da7xrz697/image/upload/v1740457903/esp32-ranas/foto.jpg" id="liveImage">
                                     </div>
                                 </div>
                             </div>
@@ -848,14 +844,6 @@
             src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"
             crossorigin="anonymous"></script>
         <script src="js/datatables-simple-demo.js"></script>
-        <script>
-            // Actualizar imagen cada 5 segundos (evitar caché)
-            setInterval(() => {
-                const timestamp = Date.now();
-                document.getElementById('liveImage').src = 
-                  `https://raw.githubusercontent.com/JaviCraftero/Xokualochi/main/fotos/foto_${timestamp}.jpg`;
-              }, 5000);
-        </script>
-
+        
     </body>
 </html>
