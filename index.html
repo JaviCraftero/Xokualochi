@@ -51,14 +51,14 @@
             appId: "1:1083017529444:web:8e246c28345b89172d7771"
             };
 
-            const app = initializeApp(firebaseConfig);
-            const db = getDatabase(app);
-            const storage = getStorage(app);
+            const app = firebase.initializeApp(firebaseConfig);
+            const db = firebase.database();
+            const storage = firebase.app.storage();
 
             // Obtener la referencia a la imagen SOLO UNA VEZ
             const storageImgRef = storageRef(storage, 'Incubadora_1/foto.jpg'); //Ahora storageImgRef
 
-            db.ref('datos').on('value', (snapshot) => {
+            firebase.database.ref('datos').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) { //Asegurate que data no es null
                 document.getElementById('salida').innerText = data.salida;
