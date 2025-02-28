@@ -40,7 +40,7 @@
             authDomain: "ranitas-test.firebaseapp.com",
             databaseURL: "https://ranitas-test-default-rtdb.firebaseio.com",
             projectId: "ranitas-test",
-            storageBucket: "ranitas-test.appspot.com",  // Corregido:  Usa appspot.com, NO firebasestorage.app
+            storageBucket: "ranitas-test.firebasestorage.app",  // Corregido:  Usa appspot.com, NO firebasestorage.app
             messagingSenderId: "1083017529444",
             appId: "1:1083017529444:web:8e246c28345b89172d7771"
             };
@@ -52,6 +52,12 @@
 
             // Obtener la referencia a la imagen SOLO UNA VEZ
             const imageRef = storageRef(storage, 'Incubadora_1/foto.jpg');
+
+            database.ref('datos').on('value', (snapshot) => {
+                const data = snapshot.val();
+                document.getElementById('salida').innerText = data.salida;
+                document.getElementById('entrada').innerText = data.entrada;
+            });
 
             async function updateImage() {
                 try {
