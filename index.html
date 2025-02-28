@@ -74,23 +74,6 @@
                     });
             }
 
-
-            function updateImage() {
-            getDownloadURL(storageImgRef)
-                .then((url) => {
-                const img = document.getElementById('Incubadora_1');
-                if (img) {
-                    img.src = url;
-                    console.log('Imagen actualizada:', url);
-                } else {
-                    console.error("Elemento con ID 'Incubadora_1' no encontrado en el DOM.");
-                }
-                })
-                .catch((error) => {
-                console.error('Error al actualizar la imagen:', error);
-                });
-            }
-
             updateImage();
             setInterval(updateImage, 15000);
 
