@@ -27,10 +27,15 @@
             src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
         <script
             src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
         <script type="module">
             // Import the functions from firebase
             import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
             import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-analytics.js";
+            import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js";
+            import {getStorage, ref as storageRef} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js";
             // TODO: Add SDKs for Firebase products that you want to use
             // https://firebase.google.com/docs/web/setup#available-libraries
           
