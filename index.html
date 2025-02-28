@@ -24,10 +24,6 @@
             href="assets/img/favicon-16x16.png">
         <link rel="manifest" href="assets/img/site.webmanifest">
         <script
-            src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-        <script
-            src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-        <script
             src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
         <script
             src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
@@ -36,10 +32,8 @@
         <script type="module">
             // Import the functions from firebase
             import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-            import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-            import { getStorage, ref as storageRef } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
-
-
+            import { getDatabase } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+            import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
             const firebaseConfig = {
             apiKey: "AIzaSyCWthF7mN1h1n99IbFAarl-iyVTiwzYm94",
@@ -52,26 +46,21 @@
             };
 
             const app = firebase.initializeApp(firebaseConfig);
-            const db = firebase.database();
-            const storage = firebase.app.storage();
+
+            const db = getDatabase(app);
+            const storage = getStorage(app);
 
             // Obtener la referencia a la imagen SOLO UNA VEZ
-            const storageRefer = storage.ref().child('Incubadora_1/foto.jpg'); //Crea la referencia a tu archivo
+            const imageRef = storageRef(storage, 'Incubadora_1/foto.jpg');
 
-            function updateImage() {
-                storageRefer.getDownloadURL()
-                    .then((url) => {
-                        const img = document.getElementById('Incubadora_1');
-                        if (img) {
-                            img.src = url;
-                            console.log('Imagen actualizada:', url);
-                        } else {
-                            console.error("Elemento con ID 'Incubadora_1' no encontrado en el DOM.");
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error al actualizar la imagen:', error);
-                    });
+            async function updateImage() {
+                try {
+                    const url = await getDownloadURL(imageRef);
+                    const img = document.getElementById('Incubadora_1');
+                    img.src = url;
+                } catch (error) {
+                    console.error('Error:', error);
+                }
             }
 
             updateImage();
