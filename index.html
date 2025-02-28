@@ -56,17 +56,23 @@
             const storage = firebase.app.storage();
 
             // Obtener la referencia a la imagen SOLO UNA VEZ
-            const storageImgRef = storageRef(storage, 'Incubadora_1/foto.jpg'); //Ahora storageImgRef
+            const storageRef = storage.ref().child('Incubadora_1/foto.jpg'); //Crea la referencia a tu archivo
 
-            firebase.database.ref('datos').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) { //Asegurate que data no es null
-                document.getElementById('salida').innerText = data.salida;
-                document.getElementById('entrada').innerText = data.entrada;
-            } else {
-                console.error("Datos no encontrados en la base de datos.");
+            function updateImage() {
+                storageRef.getDownloadURL()
+                    .then((url) => {
+                        const img = document.getElementById('Incubadora_1');
+                        if (img) {
+                            img.src = url;
+                            console.log('Imagen actualizada:', url);
+                        } else {
+                            console.error("Elemento con ID 'Incubadora_1' no encontrado en el DOM.");
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error al actualizar la imagen:', error);
+                    });
             }
-            });
 
 
             function updateImage() {
