@@ -47,42 +47,49 @@
               measurementId: "G-GL7ZSPCPJW"
             };
           
-            // Initialize Firebase
-            firebase.initializeApp(firebaseConfig);
-            const database = firebase.database();
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+            const storage = getStorage(app); 
 
-            database.ref('datos').on('value', (snapshot) => {
+            db.ref('datos').on('value', (snapshot) => {
                 const data = snapshot.val();
                 document.getElementById('salida').innerText = data.salida;
                 document.getElementById('entrada').innerText = data.entrada;
             });
-          </script>
-        <script>
-            const storage = firebase.app().storage("gs://ranitas-test.firebasestorage.app"); 
-            const storageRef = storage.ref('Incubadora_1/foto.jpg'); 
+
+            const storageRef = ref(storage, 'Incubadora_1/foto.jpg');
+
             
             // Función para actualizar la imagen
             function updateImage() {
-            storageRef.getDownloadURL()
-                .then((url) => {
-                // Aquí obtienes la URL de descarga de la imagen actualizada
-                const img = document.getElementById('Incubadora_1'); 
-                img.src = url;
-                console.log('Imagen actualizada:', url);
-                })
-                .catch((error) => {
-                // Maneja errores, como si la imagen no existe o hay problemas de conexión.
-                console.error('Error al actualizar la imagen:', error);
-                });
-            }
-
+                getDownloadURL(storageRef)
+                  .then((url) => {
+                    const img = document.getElementById('Incubadora_1'); // 
+                    if (img) {
+                      img.src = url;
+                      console.log('Imagen actualizada:', url);
+                    } else {
+                      console.error("Elemento con ID 'Incubadora_1' no encontrado en el DOM.");
+                    }
+                  })
+                  .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    // Maneja los diferentes tipos de errores
+                    if (errorCode === 'storage/object-not-found') {
+                      console.error('Imagen no encontrada en Firebase Storage:', errorMessage);
+                    } else if (errorCode === 'storage/unauthorized') {
+                      console.error('No tienes autorización para acceder a la imagen:', errorMessage);
+                    } else {
+                      console.error('Error desconocido al obtener la URL de la imagen:', error);
+                    }
+                  });
+              }
             // Llamar la función de actualización inicialmente
             updateImage();
 
             // Llamar la función de actualización cada 15 segundos
             setInterval(updateImage, 15000); // 15000 milisegundos = 15 segundos
-
-
           </script>
     </head>
     <body class="sb-nav-fixed">
@@ -261,7 +268,7 @@
                                     </div>
                                     <div class="card-body text-center">
                                         <img
-                                            src="https://res.cloudinary.com/da7xrz697/image/upload/esp32-ranas/foto.jpg"
+                                            src=""
                                             alt="Ultima foto tomada de la incubadora 1" id="Incubadora_1">
                                     </div>
                                 </div>
