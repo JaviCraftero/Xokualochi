@@ -53,7 +53,10 @@
             // Obtener la referencia a la imagen SOLO UNA VEZ
             const imageRef = storageRef(storage, 'Incubadora_1/foto.jpg');
 
-            db.ref('datos').on('value', (snapshot) => {
+            const dataRef = dbRef(db, 'datos'); // <--- ¡Corrección clave aquí!
+
+            // Escucha cambios en la base de datos
+            onValue(dataRef, (snapshot) => {
                 const data = snapshot.val();
                 document.getElementById('salida').innerText = data.salida;
                 document.getElementById('entrada').innerText = data.entrada;
