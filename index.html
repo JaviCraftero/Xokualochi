@@ -56,10 +56,10 @@
             const storage = firebase.app.storage();
 
             // Obtener la referencia a la imagen SOLO UNA VEZ
-            const storageRef = storage.ref().child('Incubadora_1/foto.jpg'); //Crea la referencia a tu archivo
+            const storageRefer = storage.ref().child('Incubadora_1/foto.jpg'); //Crea la referencia a tu archivo
 
             function updateImage() {
-                storageRef.getDownloadURL()
+                storageRefer.getDownloadURL()
                     .then((url) => {
                         const img = document.getElementById('Incubadora_1');
                         if (img) {
