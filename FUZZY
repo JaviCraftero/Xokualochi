@@ -1,0 +1,128 @@
+#include <Arduino.h>
+#include <Wire.h>
+#include <DHT.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <Fuzzy.h>
+
+#define DHTPIN 2      // Pin del sensor DHT11
+#define DHTTYPE DHT11 // Tipo de sensor DHT
+#define ONE_WIRE_BUS 4 // Pin del sensor DS18B20
+#define pH_PIN A0     // Pin del sensor de pH
+
+DHT dht(DHTPIN, DHTTYPE);
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+Fuzzy fuzzy;
+
+const int relayCalefactor = 5;
+const int relayAspersor = 6;
+const int relaypH = 7;
+
+const int CALEFACTOR_THRESHOLD = 100;
+const int ASPERSOR_THRESHOLD = 50;
+const int PH_THRESHOLD = 50;
+
+float temperatura, humedad, pH;
+
+void setupFuzzy() {
+    // Variables difusas de entrada
+    FuzzyInput *temp = new FuzzyInput(1);
+    temp->addFuzzySet(new FuzzySet("baja", 15, 20, 20, 22));
+    temp->addFuzzySet(new FuzzySet("media", 21, 23, 23, 25));
+    temp->addFuzzySet(new FuzzySet("alta", 24, 26, 27, 30));
+    fuzzy.addFuzzyInput(temp);
+
+    FuzzyInput *hum = new FuzzyInput(2);
+    hum->addFuzzySet(new FuzzySet("baja", 50, 60, 60, 70));
+    hum->addFuzzySet(new FuzzySet("media", 69, 75, 75, 85));
+    hum->addFuzzySet(new FuzzySet("alta", 84, 90, 90, 100));
+    fuzzy.addFuzzyInput(hum);
+
+    FuzzyInput *ph = new FuzzyInput(3);
+    ph->addFuzzySet(new FuzzySet("acido", 5.5, 6.0, 6.0, 6.5));
+    ph->addFuzzySet(new FuzzySet("neutral", 6.4, 7.0, 7.0, 7.5));
+    ph->addFuzzySet(new FuzzySet("basico", 7.4, 8.0, 8.0, 8.5));
+    fuzzy.addFuzzyInput(ph);
+
+    // Variables difusas de salida
+    FuzzyOutput *calefaccion = new FuzzyOutput(1);
+    calefaccion->addFuzzySet(new FuzzySet("baja", 0, 50, 50, 100));
+    calefaccion->addFuzzySet(new FuzzySet("alta", 100, 150, 150, 200));
+    fuzzy.addFuzzyOutput(calefaccion);
+
+    FuzzyOutput *aspersor = new FuzzyOutput(2);
+    aspersor->addFuzzySet(new FuzzySet("apagado", 0, 0, 0, 50));
+    aspersor->addFuzzySet(new FuzzySet("encendido", 50, 100, 100, 150));
+    fuzzy.addFuzzyOutput(aspersor);
+
+    FuzzyOutput *phControl = new FuzzyOutput(3);
+    phControl->addFuzzySet(new FuzzySet("reducir", 0, 50, 50, 100));
+    phControl->addFuzzySet(new FuzzySet("mantener", 100, 150, 150, 200));
+    fuzzy.addFuzzyOutput(phControl);
+
+    // Reglas difusas
+    FuzzyRuleAntecedent *tempBaja = new FuzzyRuleAntecedent();
+    tempBaja->joinSingle(temp->getFuzzySet("baja"));
+    FuzzyRuleConsequent *actCalefactor = new FuzzyRuleConsequent();
+    actCalefactor->addOutput(calefaccion->getFuzzySet("alta"));
+    fuzzy.addFuzzyRule(new FuzzyRule(1, tempBaja, actCalefactor));
+
+    FuzzyRuleAntecedent *humBaja = new FuzzyRuleAntecedent();
+    humBaja->joinSingle(hum->getFuzzySet("baja"));
+    FuzzyRuleConsequent *actAspersor = new FuzzyRuleConsequent();
+    actAspersor->addOutput(aspersor->getFuzzySet("encendido"));
+    fuzzy.addFuzzyRule(new FuzzyRule(2, humBaja, actAspersor));
+
+    FuzzyRuleAntecedent *phAlto = new FuzzyRuleAntecedent();
+    phAlto->joinSingle(ph->getFuzzySet("basico"));
+    FuzzyRuleConsequent *actPhControl = new FuzzyRuleConsequent();
+    actPhControl->addOutput(phControl->getFuzzySet("reducir"));
+    fuzzy.addFuzzyRule(new FuzzyRule(3, phAlto, actPhControl));
+}
+
+void setup() {
+    Serial.begin(9600);
+    dht.begin();
+    sensors.begin();
+    pinMode(relayCalefactor, OUTPUT);
+    pinMode(relayAspersor, OUTPUT);
+    pinMode(relaypH, OUTPUT);
+    setupFuzzy();
+}
+
+void loop() {
+    humedad = dht.readHumidity();
+    if (isnan(humedad)) {
+        Serial.println("Error al leer la humedad!");
+        return;
+    }
+
+    sensors.requestTemperatures();
+    temperatura = sensors.getTempCByIndex(0);
+    if (temperatura == DEVICE_DISCONNECTED_C) {
+        Serial.println("Error al leer la temperatura!");
+        return;
+    }
+
+    pH = analogRead(pH_PIN) * (14.0 / 1023.0);
+
+    Serial.print("Temperatura: "); Serial.print(temperatura); Serial.println(" °C");
+    Serial.print("Humedad: "); Serial.print(humedad); Serial.println(" %");
+    Serial.print("pH: "); Serial.println(pH);
+
+    fuzzy.setInput(1, temperatura);
+    fuzzy.setInput(2, humedad);
+    fuzzy.setInput(3, pH);
+    fuzzy.fuzzify();
+
+    int calefactorOutput = fuzzy.defuzzify(1);
+    int aspersorOutput = fuzzy.defuzzify(2);
+    int pHOutput = fuzzy.defuzzify(3);
+
+    digitalWrite(relayCalefactor, calefactorOutput > CALEFACTOR_THRESHOLD ? HIGH : LOW);
+    digitalWrite(relayAspersor, aspersorOutput > ASPERSOR_THRESHOLD ? HIGH : LOW);
+    digitalWrite(relaypH, pHOutput > PH_THRESHOLD ? HIGH : LOW);
+
+    delay(5000);
+}
