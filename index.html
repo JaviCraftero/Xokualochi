@@ -40,7 +40,7 @@
             authDomain: "ranitas-test.firebaseapp.com",
             databaseURL: "https://ranitas-test-default-rtdb.firebaseio.com",
             projectId: "ranitas-test",
-            storageBucket: "ranitas-test.firebasestorage.app",  // Corregido:  Usa appspot.com, NO firebasestorage.app
+            storageBucket: "ranitas-test.appspot.com",  
             messagingSenderId: "1083017529444",
             appId: "1:1083017529444:web:8e246c28345b89172d7771"
             };
@@ -53,13 +53,20 @@
             // Obtener la referencia a la imagen SOLO UNA VEZ
             const imageRef = storageRef(storage, 'Incubadora_1/foto.jpg');
 
-            const dataRef = dbRef(db, 'datos'); // <--- ¡Corrección clave aquí!
+            const dataRef = dbRef(db, 'Incu1'); // <--- ¡Corrección clave aquí!
 
             // Escucha cambios en la base de datos
             onValue(dataRef, (snapshot) => {
                 const data = snapshot.val();
-                document.getElementById('salida').innerText = data.salida;
-                document.getElementById('entrada').innerText = data.entrada;
+                document.getElementById('DS18').innerText = data.DS18;
+                document.getElementById('Temp1').innerText = data.Temp1;
+                document.getElementById('Temp2').innerText = data.Temp2;
+                document.getElementById('Temp3').innerText = data.Temp3;
+                document.getElementById('Hum1').innerText = data.Hum1;
+                document.getElementById('Hum2').innerText = data.Hum2;
+                document.getElementById('Hum3').innerText = data.Hum3;
+                document.getElementById('PromT').innerText = data.PromT;
+                document.getElementById('PromH').innerText = data.PromH;
             });
 
             async function updateImage() {
@@ -76,6 +83,28 @@
             setInterval(updateImage, 15000);
 
           </script>
+          <style>
+            .sensor-data {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20px;
+            }
+            .sensor-card {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 20px;
+                width: 200px;
+                text-align: center;
+            }
+            .sensor-card h3 {
+                margin-bottom: 10px;
+            }
+            .sensor-card p {
+                font-size: 1.2em;
+                margin: 0;
+            }
+        </style>
     </head>
     <body class="sb-nav-fixed">
         <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
@@ -259,10 +288,46 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <h1>Datos del Sensor</h1>
-                            <p>Salida (DAC): <span id="salida">0</span></p>
-                            <p>Entrada (ADC): <span id="entrada">0</span></p>
+                        </div>
+                        <!-- Sección de Datos del Sensor -->
+                        <h1>Datos del Sensor</h1>
+                        <div class="sensor-data">
+                            <div class="sensor-card">
+                                <h3>DS18</h3>
+                                <p id="DS18">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Temp1</h3>
+                                <p id="Temp1">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Temp2</h3>
+                                <p id="Temp2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Temp3</h3>
+                                <p id="Temp3">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Hum1</h3>
+                                <p id="Hum1">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Hum2</h3>
+                                <p id="Hum2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Hum3</h3>
+                                <p id="Hum3">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>PromT</h3>
+                                <p id="PromT">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>PromH</h3>
+                                <p id="PromH">0</p>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-xl-3 col-md-6">
@@ -699,7 +764,7 @@
                                             <td>Director</td>
                                             <td>New York</td>
                                             <td>65</td>
-                                            <td>2008/09/26</td>
+                                            <8/26</td>
                                             <td>$645,750</td>
                                         </tr>
                                         <tr>
