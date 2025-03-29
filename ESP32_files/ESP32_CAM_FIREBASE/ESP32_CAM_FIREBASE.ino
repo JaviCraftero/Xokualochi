@@ -8,10 +8,13 @@
 #include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
 #include <base64.h> // by Densaugeo
+#include <Fuzzy.h>
 
 // Credenciales WiFi
 const char* ssid = "Bandle";
 const char* password = "YordlepeLudito1120";
+
+
 
 // Firebase config
 const char* function_url = "https://us-central1-ranitas-test.cloudfunctions.net/uploadImage"; // URL de Cloud Function
@@ -21,7 +24,7 @@ const char* firebaseURL = "https://ranitas-test-default-rtdb.firebaseio.com/Incu
 // DHT22
 #define DHT1_PIN 12  
 #define DHT2_PIN 13  
-#define DHT3_PIN 2   
+#define DHT3_PIN 15 
 #define DHT_TYPE DHT22
 
 DHT dht1(DHT1_PIN, DHT_TYPE);
@@ -32,8 +35,16 @@ DHT dht3(DHT3_PIN, DHT_TYPE);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
+#define CALEFACTOR 2
+#define ASPERSOR 16
+// #define phRegulador 3
+
+const int CALEFACTOR_THRESHOLD = 100;
+const int ASPERSOR_THRESHOLD = 50;
+const int PH_THRESHOLD = 50;
+
 // Variables de temperatura
-float temp1, hum1, temp2, hum2, temp3, hum3, tempDS;
+float temp1, hum1, temp2, hum2, temp3, hum3, tempDS, temp_prom, hum_prom;
 
 // Pines de la cámara
 #define PWDN_GPIO_NUM 32
@@ -54,6 +65,9 @@ float temp1, hum1, temp2, hum2, temp3, hum3, tempDS;
 #define PCLK_GPIO_NUM 22
 
 #define LED_GPIO_NUM 4 // Flash
+
+//Fuzzy
+Fuzzy fuzzy;
 
 void setup() {
   Serial.begin(115200);
@@ -113,14 +127,38 @@ void setup() {
   dht1.begin();
   dht2.begin();
   dht3.begin();
+
+  // Inicialización de los pines de salida
+  pinMode(CALEFACTOR, OUTPUT);
+  pinMode(ASPERSOR, OUTPUT);
+  // pinMode(phRegulador, OUTPUT);
+  setupFuzzy();
 }
 
 void loop() {
-  if (WiFi.status() == WL_CONNECTED) {
-    readSensors();
-    captureAndUploadToFirebase();
+  static unsigned long lastPhotoTime = 0; // Tiempo de la última foto
+  static unsigned long lastSensorDataTime = 0; // Tiempo de los últimos datos de sensores
+  unsigned long currentTime = millis(); // Tiempo actual
+
+  // Tomar una foto cada 30 segundos
+  if (currentTime - lastPhotoTime >= 30000) { // 30,000 ms = 30 segundos
+    lastPhotoTime = currentTime;
+    if (WiFi.status() == WL_CONNECTED) {
+      captureAndUploadToFirebase();
+    } else {
+      Serial.println("⚠️ WiFi no conectado. No se puede tomar la foto.");
+    }
   }
-  delay(15000);  // ⏳ Esperar 15 segundos entre capturas
+
+  // Enviar datos de sensores cada 30 minutos
+  if (currentTime - lastSensorDataTime >= 1800000) { // 1,800,000 ms = 30 minutos
+    lastSensorDataTime = currentTime;
+    if (WiFi.status() == WL_CONNECTED) {
+      readSensors();
+    } else {
+      Serial.println("⚠️ WiFi no conectado. No se pueden enviar los datos de los sensores.");
+    }
+  }
 }
 
 void captureAndUploadToFirebase() {
@@ -197,8 +235,8 @@ void readSensors() {
   if (!isnan(hum3)) { sumHum += hum3; }
 
   // Cálculo del promedio
-  float temp_prom = (validReadings > 0) ? (sumTemp / validReadings) : 0;
-  float hum_prom  = (sumHum / 3); // 3 sensores de humedad, siempre sumamos los tres
+  temp_prom = (validReadings > 0) ? (sumTemp / validReadings) : 0;
+  hum_prom  = (sumHum / 3); // 3 sensores de humedad, siempre sumamos los tres
 
   // Mostrar los datos de los DHT22
   Serial.print("🌡️ DHT22_1: "); Serial.print(temp1); Serial.print("°C  ");
@@ -236,4 +274,96 @@ void readSensors() {
   }
   http.end();
   
+}
+
+void setupFuzzy() {
+    // Definir variables de entrada
+    FuzzyInput* temp = new FuzzyInput(1);
+    FuzzySet* tempBaja = new FuzzySet(15, 20, 20, 22);
+    FuzzySet* tempMedia = new FuzzySet(21, 23, 23, 25);
+    FuzzySet* tempAlta = new FuzzySet(24, 26, 27, 30);
+    temp->addFuzzySet(tempBaja);
+    temp->addFuzzySet(tempMedia);
+    temp->addFuzzySet(tempAlta);
+    fuzzy.addFuzzyInput(temp);
+
+    FuzzyInput* hum = new FuzzyInput(2);
+    FuzzySet* humBaja = new FuzzySet(50, 60, 60, 70);
+    FuzzySet* humMedia = new FuzzySet(69, 75, 75, 85);
+    FuzzySet* humAlta = new FuzzySet(84, 90, 90, 100);
+    hum->addFuzzySet(humBaja);
+    hum->addFuzzySet(humMedia);
+    hum->addFuzzySet(humAlta);
+    fuzzy.addFuzzyInput(hum);
+
+    // 📌 FUTURA IMPLEMENTACIÓN: Agregar entrada de pH
+    // FuzzyInput* ph = new FuzzyInput(3);
+    // FuzzySet* phAcido = new FuzzySet(5.5, 6.0, 6.0, 6.5);
+    // FuzzySet* phNeutral = new FuzzySet(6.4, 7.0, 7.0, 7.5);
+    // FuzzySet* phBasico = new FuzzySet(7.4, 8.0, 8.0, 8.5);
+    // ph->addFuzzySet(phAcido);
+    // ph->addFuzzySet(phNeutral);
+    // ph->addFuzzySet(phBasico);
+    // fuzzy.addFuzzyInput(ph);
+
+    // Definir variables de salida
+    FuzzyOutput* calefaccion = new FuzzyOutput(1);
+    FuzzySet* calBaja = new FuzzySet(0, 50, 50, 100);
+    FuzzySet* calAlta = new FuzzySet(100, 150, 150, 200);
+    calefaccion->addFuzzySet(calBaja);
+    calefaccion->addFuzzySet(calAlta);
+    fuzzy.addFuzzyOutput(calefaccion);
+
+    FuzzyOutput* aspersor = new FuzzyOutput(2);
+    FuzzySet* aspApagado = new FuzzySet(0, 0, 0, 50);
+    FuzzySet* aspEncendido = new FuzzySet(50, 100, 100, 150);
+    aspersor->addFuzzySet(aspApagado);
+    aspersor->addFuzzySet(aspEncendido);
+    fuzzy.addFuzzyOutput(aspersor);
+
+    // 📌 FUTURA IMPLEMENTACIÓN: Agregar salida de control de pH
+    // FuzzyOutput* phControl = new FuzzyOutput(3);
+    // FuzzySet* phReducir = new FuzzySet(0, 50, 50, 100);
+    // FuzzySet* phMantener = new FuzzySet(100, 150, 150, 200);
+    // phControl->addFuzzySet(phReducir);
+    // phControl->addFuzzySet(phMantener);
+    // fuzzy.addFuzzyOutput(phControl);
+
+    // Definir reglas difusas
+    FuzzyRuleAntecedent* reglaTempBaja = new FuzzyRuleAntecedent();
+    reglaTempBaja->joinSingle(tempBaja);
+    FuzzyRuleConsequent* consCalefaccion = new FuzzyRuleConsequent();
+    consCalefaccion->addOutput(calAlta);
+    fuzzy.addFuzzyRule(new FuzzyRule(1, reglaTempBaja, consCalefaccion));
+
+    FuzzyRuleAntecedent* reglaHumBaja = new FuzzyRuleAntecedent();
+    reglaHumBaja->joinSingle(humBaja);
+    FuzzyRuleConsequent* consAspersor = new FuzzyRuleConsequent();
+    consAspersor->addOutput(aspEncendido);
+    fuzzy.addFuzzyRule(new FuzzyRule(2, reglaHumBaja, consAspersor));
+
+    // 📌 FUTURA IMPLEMENTACIÓN: Reglas para el control de pH
+    // FuzzyRuleAntecedent* reglaPhAlto = new FuzzyRuleAntecedent();
+    // reglaPhAlto->joinSingle(phBasico);
+    // FuzzyRuleConsequent* consPhControl = new FuzzyRuleConsequent();
+    // consPhControl->addOutput(phReducir);
+    // fuzzy.addFuzzyRule(new FuzzyRule(3, reglaPhAlto, consPhControl));
+}
+void evaluateFuzzy(){
+  Serial.println("Evaluando fuzzy...");
+  Serial.print("Temperatura: "); Serial.println(temp_prom);
+  Serial.print("Humedad: "); Serial.println(hum_prom);
+  // Serial.print("PH: "); Serial.println(ph);
+
+  fuzzy.setInput(1, temp_prom);
+  fuzzy.setInput(2, hum_prom);
+  // fuzzy.setInput(3, ph);
+
+  int calefaccion = fuzzy.defuzzify(1);
+  int aspersor = fuzzy.defuzzify(2);
+  // int phControl = fuzzy.defuzzify(3);
+
+  digitalWrite(CALEFACTOR, calefaccion > CALEFACTOR_THRESHOLD ? HIGH : LOW);
+  digitalWrite(ASPERSOR, aspersor > ASPERSOR_THRESHOLD ? HIGH : LOW);
+  // digitalWrite(phRegulador, phControl > PH_THRESHOLD ? HIGH : LOW);
 }
