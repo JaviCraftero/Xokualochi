@@ -22,9 +22,9 @@ const char* firebaseURL = "https://ranitas-test-default-rtdb.firebaseio.com/Incu
 
 // Sensores de temperatura
 // DHT22
-#define DHT1_PIN 12  
+#define DHT1_PIN 2
 #define DHT2_PIN 13  
-#define DHT3_PIN 15 
+#define DHT3_PIN 15  
 #define DHT_TYPE DHT22
 
 DHT dht1(DHT1_PIN, DHT_TYPE);
@@ -35,13 +35,10 @@ DHT dht3(DHT3_PIN, DHT_TYPE);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-#define CALEFACTOR 2
-#define ASPERSOR 16
-// #define phRegulador 3
+// Sensor de pH
+#define PH_SENSOR_PIN 12 // Pin analógico para el sensor de pH
 
-const int CALEFACTOR_THRESHOLD = 100;
-const int ASPERSOR_THRESHOLD = 50;
-const int PH_THRESHOLD = 50;
+float phValue = 0.0; // Variable para almacenar el valor de pH
 
 // Variables de temperatura
 float temp1, hum1, temp2, hum2, temp3, hum3, tempDS, temp_prom, hum_prom;
@@ -74,12 +71,7 @@ void setup() {
   delay(1000);
 
   // Conectar WiFi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print("🌐 Conectando...");
-  }
-  Serial.println("✅ WiFi conectado");
+  
 
   // Inicializar cámara
   camera_config_t config;
@@ -136,28 +128,26 @@ void setup() {
 }
 
 void loop() {
-  static unsigned long lastPhotoTime = 0; // Tiempo de la última foto
-  static unsigned long lastSensorDataTime = 0; // Tiempo de los últimos datos de sensores
-  unsigned long currentTime = millis(); // Tiempo actual
+  float analogValue = analogRead(PH_SENSOR_PIN); // Leer el valor analógico
+  float voltage = (analogValue / 4094.0) * 3.3; // Convertir a rango de pH (0-14)
+  phValue = (-0.853*pow(voltage,2)) + (0.047*voltage) + 10.304;
+  Serial.print("⚡ Valor de voltaje: ");
+  Serial.println(voltage);
+  Serial.print("📏 Valor de pH: ");
+  Serial.println(phValue);
+  
 
-  // Tomar una foto cada 30 segundos
-  if (currentTime - lastPhotoTime >= 30000) { // 30,000 ms = 30 segundos
-    lastPhotoTime = currentTime;
-    if (WiFi.status() == WL_CONNECTED) {
-      captureAndUploadToFirebase();
-    } else {
-      Serial.println("⚠️ WiFi no conectado. No se puede tomar la foto.");
-    }
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print("🌐 Conectando...");
   }
+  Serial.println("✅ WiFi conectado");
 
-  // Enviar datos de sensores cada 30 minutos
-  if (currentTime - lastSensorDataTime >= 1800000) { // 1,800,000 ms = 30 minutos
-    lastSensorDataTime = currentTime;
-    if (WiFi.status() == WL_CONNECTED) {
-      readSensors();
-    } else {
-      Serial.println("⚠️ WiFi no conectado. No se pueden enviar los datos de los sensores.");
-    }
+  if (WiFi.status() == WL_CONNECTED) {
+    readSensors();
+    captureAndUploadToFirebase();
+    WiFi.disconnect(true);
   }
 }
 
@@ -199,6 +189,9 @@ void captureAndUploadToFirebase() {
 }
 
 void readSensors() {
+
+  
+
   // Lectura del DS18B20
   sensors.requestTemperatures(); 
   tempDS = sensors.getTempCByIndex(0);
@@ -258,7 +251,7 @@ void readSensors() {
   HTTPClient http;
   http.begin("https://ranitas-test-default-rtdb.firebaseio.com/Incu1.json");
   http.addHeader("Content-Type", "application/json");
-  String payload = "{\"DS18\":" + String(tempDS) + ",\"Temp1\":" + String(temp1) + ",\"Temp2\":" + String(temp2) + ",\"Temp3\":" + String(temp3) + ",\"Hum1\":" + String(hum1) + ",\"Hum2\":" + String(hum2) + ",\"Hum3\":" + String(hum3) + ",\"PromT\":" + String(temp_prom) + ",\"PromH\":" + String(hum_prom) + "}";
+  String payload = "{\"DS18\":" + String(tempDS) + ",\"Temp1\":" + String(temp1) + ",\"Temp2\":" + String(temp2) + ",\"Temp3\":" + String(temp3) + ",\"Hum1\":" + String(hum1) + ",\"Hum2\":" + String(hum2) + ",\"Hum3\":" + String(hum3) + ",\"PromT\":" + String(temp_prom) + ",\"PromH\":" + String(hum_prom) + ",\"pH\":" + String(phValue) + "}";
   int httpCode = http.PUT(payload);
 
   if (httpCode == 200) {
