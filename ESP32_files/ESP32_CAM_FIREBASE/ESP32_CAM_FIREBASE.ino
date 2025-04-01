@@ -70,9 +70,6 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // Conectar WiFi
-  
-
   // Inicializar cámara
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -135,7 +132,19 @@ void loop() {
   Serial.println(voltage);
   Serial.print("📏 Valor de pH: ");
   Serial.println(phValue);
+
+  // Lectura del DS18B20
+  sensors.requestTemperatures(); 
+  tempDS = sensors.getTempCByIndex(0);
   
+  if (tempDS == -127.00) {
+    Serial.println("⚠️ Error: No se pudo leer la temperatura del DS18B20.");
+    tempDS = 0; // Evita que el error afecte el promedio
+  } else {
+    Serial.print("🌡️ DS18B20: ");
+    Serial.print(tempDS);
+    Serial.println("°C");
+  }
 
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -190,22 +199,7 @@ void captureAndUploadToFirebase() {
 
 void readSensors() {
 
-  
-
-  // Lectura del DS18B20
-  sensors.requestTemperatures(); 
-  tempDS = sensors.getTempCByIndex(0);
-  
-  if (tempDS == -127.00) {
-    Serial.println("⚠️ Error: No se pudo leer la temperatura del DS18B20.");
-    tempDS = 0; // Evita que el error afecte el promedio
-  } else {
-    Serial.print("🌡️ DS18B20: ");
-    Serial.print(tempDS);
-    Serial.println("°C");
-  }
-
-  // Lectura de los DHT22
+   // Lectura de los DHT22
   temp1 = dht1.readTemperature();
   hum1 = dht1.readHumidity();
   temp2 = dht2.readTemperature();
