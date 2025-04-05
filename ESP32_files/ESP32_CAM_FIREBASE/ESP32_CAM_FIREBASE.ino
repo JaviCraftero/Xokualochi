@@ -361,25 +361,42 @@ void sendToFirebase() {
   String payload;
   serializeJson(doc, payload);
 
-  // Crear un nodo único basado en la marca de tiempo
-  char firebasePath[128];
-  snprintf(firebasePath, sizeof(firebasePath), "/Incubadora1/%04d-%02d-%02d_%02d-%02d-%02d.json",
-           timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-           timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
-  // Mandar datos a Firebase
+  // **Payload 1: Sobrescribir datos en un nodo fijo**
   HTTPClient http;
-  http.begin(String(firebaseURL) + firebasePath); // Enviar al nodo específico
+  http.begin("https://ranitas-test-default-rtdb.firebaseio.com/Incu1.json"); // Nodo fijo
   http.addHeader("Content-Type", "application/json");
   int httpCode = http.PUT(payload);
 
   if (httpCode == 200) {
-    Serial.println("✅ Datos enviados a Firebase");
+    Serial.println("✅ Datos sobrescritos en Firebase");
     String response = http.getString();
     Serial.println("📄 Respuesta del servidor:");
     Serial.println(response);
   } else {
-    Serial.println("❌ Error al enviar datos: " + String(httpCode));
+    Serial.println("❌ Error al sobrescribir datos: " + String(httpCode));
+    String response = http.getString();
+    Serial.println("📄 Respuesta del servidor:");
+    Serial.println(response);
+  }
+  http.end();
+
+  // **Payload 2: Guardar datos con un timestamp único**
+  char firebasePath[128];
+  snprintf(firebasePath, sizeof(firebasePath), "/Incu1/%04d-%02d-%02d_%02d-%02d-%02d.json",
+           timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+           timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
+  http.begin(String(firebaseURL) + firebasePath); // Nodo único basado en timestamp
+  http.addHeader("Content-Type", "application/json");
+  httpCode = http.PUT(payload);
+
+  if (httpCode == 200) {
+    Serial.println("✅ Datos guardados con timestamp en Firebase");
+    String response = http.getString();
+    Serial.println("📄 Respuesta del servidor:");
+    Serial.println(response);
+  } else {
+    Serial.println("❌ Error al guardar datos con timestamp: " + String(httpCode));
     String response = http.getString();
     Serial.println("📄 Respuesta del servidor:");
     Serial.println(response);
