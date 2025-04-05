@@ -8,7 +8,8 @@
 #include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
 #include <base64.h> // by Densaugeo
-#include <Fuzzy.h>
+#include <ArduinoJson.h> 
+#include <time.h> // Biblioteca para manejar la hora
 
 // Credenciales WiFi
 const char* ssid = "Bandle";
@@ -43,6 +44,16 @@ float phValue = 0.0; // Variable para almacenar el valor de pH
 // Variables de temperatura
 float temp1, hum1, temp2, hum2, temp3, hum3, tempDS, temp_prom, hum_prom;
 
+// Variables de tiempo
+
+unsigned long lastFirebaseSendTime = 0;
+unsigned long lastImageSendTime = 0;
+unsigned long lastSensorReadTime = 0;
+
+const unsigned long firebaseInterval = 30 * 60 * 1000; // 30 minutos
+const unsigned long imageInterval = 5 * 60 * 1000; // 10 minutos
+const unsigned long sensorReadInterval = 30 * 1000; // 30 segundos
+
 // Pines de la cámara
 #define PWDN_GPIO_NUM 32
 #define RESET_GPIO_NUM -1
@@ -63,14 +74,41 @@ float temp1, hum1, temp2, hum2, temp3, hum3, tempDS, temp_prom, hum_prom;
 
 #define LED_GPIO_NUM 4 // Flash
 
-//Fuzzy
-Fuzzy fuzzy;
-
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // Inicializar cámara
+  // Conectar a WiFi para sincronizar la hora
+  Serial.println("🌐 Conectando a WiFi para sincronizar la hora...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ WiFi conectado");
+
+  // Configurar el servidor NTP
+  configTime(-6 * 3600, 0, "pool.ntp.org", "time.nist.gov"); // UTC-6 para México (ajusta según tu zona horaria)
+  Serial.println("⏳ Sincronizando con el servidor NTP...");
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("❌ Error al obtener la hora");
+    return;
+  }
+  Serial.println("✅ Hora sincronizada");
+
+  // Mostrar la hora sincronizada
+  char timestamp[20];
+  strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  Serial.print("🕒 Hora sincronizada: ");
+  Serial.println(timestamp);
+
+  // Apagar WiFi para ahorrar energía
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  Serial.println("🌐 WiFi apagado después de sincronizar la hora");
+
+  // Inicializar otros componentes (sensores, cámara, etc.)
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -117,14 +155,99 @@ void setup() {
   dht2.begin();
   dht3.begin();
 
-  // Inicialización de los pines de salida
-  pinMode(CALEFACTOR, OUTPUT);
-  pinMode(ASPERSOR, OUTPUT);
-  // pinMode(phRegulador, OUTPUT);
-  setupFuzzy();
 }
 
 void loop() {
+  unsigned long currentMillis = millis();
+
+  readSensors();
+
+  if (currentMillis - lastSensorReadTime >= sensorReadInterval) {
+    lastSensorReadTime = currentMillis;
+    readSensors();
+
+    // Verificar si los valores están fuera de rango
+    if (phValue < 6.5 || phValue > 7.5) {
+      Serial.println("⚠️ pH fuera de rango. Enviando datos a Firebase...");
+      sendToFirebase();
+    }
+
+    if (temp_prom < 21 || temp_prom > 28) {
+      Serial.println("⚠️ Temperatura fuera de rango. Enviando datos a Firebase...");
+      sendToFirebase();
+    }
+
+    if (hum_prom < 70 || hum_prom > 80) {
+      Serial.println("⚠️ Humedad fuera de rango. Enviando datos a Firebase...");
+      sendToFirebase();
+    }
+  }
+    
+  if (currentMillis - lastFirebaseSendTime >= firebaseInterval) {
+    lastFirebaseSendTime = currentMillis;
+    sendToFirebase();
+  }
+  if (currentMillis - lastImageSendTime >= imageInterval) {
+    lastImageSendTime = currentMillis;
+    captureAndUploadToFirebase();
+}
+}
+
+void captureAndUploadToFirebase() {
+  // Verificar conexión WiFi
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("🌐 Conectando a WiFi...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("\n✅ WiFi conectado");
+  }
+
+  // Capturar imagen
+  Serial.println("📸 Tomando foto...");
+  analogWrite(LED_GPIO_NUM, 180); // Encender el flash
+
+  camera_fb_t* fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("❌ Error en captura");
+    analogWrite(LED_GPIO_NUM, 0); // Apagar el flash
+    return;
+  }
+
+  Serial.printf("📏 Tamaño de la imagen: %d bytes\n", fb->len);
+  Serial.println("📤 Subiendo imagen a Firebase...");
+  String imageData = base64::encode(fb->buf, fb->len);
+
+  // Subir imagen a Firebase
+  HTTPClient http;
+  http.begin(function_url);
+  http.addHeader("Content-Type", "application/json"); // Se envía como JSON
+  String payload = "{\"imageData\": \"" + imageData + "\"}";
+
+  int httpResponseCode = http.POST(payload);
+
+  if (httpResponseCode > 0) {
+    Serial.println("✅ Imagen subida con éxito");
+    String response = http.getString();
+    Serial.println("📄 Respuesta del servidor:");
+    Serial.println(response);
+  } else {
+    Serial.printf("❌ Error al subir imagen: %s\n", http.errorToString(httpResponseCode).c_str());
+  }
+
+  // Liberar recursos
+  analogWrite(LED_GPIO_NUM, 0); // Apagar el flash
+  http.end();
+  esp_camera_fb_return(fb);
+
+  // Desconectar WiFi para ahorrar energía
+  WiFi.disconnect(true);
+  Serial.println("🌐 WiFi desconectado");
+}
+
+void readSensors() {
   float analogValue = analogRead(PH_SENSOR_PIN); // Leer el valor analógico
   float voltage = (analogValue / 4094.0) * 3.3; // Convertir a rango de pH (0-14)
   phValue = (-0.853*pow(voltage,2)) + (0.047*voltage) + 10.304;
@@ -146,60 +269,7 @@ void loop() {
     Serial.println("°C");
   }
 
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print("🌐 Conectando...");
-  }
-  Serial.println("✅ WiFi conectado");
-
-  if (WiFi.status() == WL_CONNECTED) {
-    readSensors();
-    captureAndUploadToFirebase();
-    WiFi.disconnect(true);
-  }
-}
-
-void captureAndUploadToFirebase() {
-  Serial.println("📸 Tomando foto...");
-  analogWrite(LED_GPIO_NUM, 180);  
-
-  camera_fb_t* fb = esp_camera_fb_get();
-  if (!fb) {
-    Serial.println("❌ Error en captura");
-    analogWrite(LED_GPIO_NUM, 0);
-    return;
-  }
-
-  Serial.printf("📏 Tamaño de la imagen: %d bytes\n", fb->len);
-  Serial.println("📤 Subiendo imagen a Firebase...");
-  String imageData = base64::encode(fb->buf, fb->len);
-
-  HTTPClient http;
-  http.begin(function_url);
-  http.addHeader("Content-Type", "application/json"); // Se envia como JSON
-  String payload = "{\"imageData\": \"" + imageData + "\"}";
-
-  int httpResponseCode = http.POST(payload);
-
-  if (httpResponseCode > 0) {
-    Serial.println("✅ Imagen subida con éxito");
-    String response = http.getString();
-    Serial.println("📄 Respuesta del servidor:");
-    Serial.println(response);
-  } else {
-    Serial.printf("❌ Error al subir imagen: %s\n", http.errorToString(httpResponseCode).c_str());
-  }
-  analogWrite(LED_GPIO_NUM, 0);  
-
-  http.end();
-  esp_camera_fb_return(fb);
-  digitalWrite(LED_GPIO_NUM, LOW);
-}
-
-void readSensors() {
-
-   // Lectura de los DHT22
+  // Lectura de los DHT22
   temp1 = dht1.readTemperature();
   hum1 = dht1.readHumidity();
   temp2 = dht2.readTemperature();
@@ -222,8 +292,13 @@ void readSensors() {
   if (!isnan(hum3)) { sumHum += hum3; }
 
   // Cálculo del promedio
-  temp_prom = (validReadings > 0) ? (sumTemp / validReadings) : 0;
-  hum_prom  = (sumHum / 3); // 3 sensores de humedad, siempre sumamos los tres
+  temp_prom = (validReadings > 0) ? (sumTemp / validReadings) : -1; // Usar -1 como indicador de error
+  hum_prom  = (sumHum > 0) ? (sumHum / 3) : -1; // Usar -1 si no hay lecturas válidas
+
+  if (temp_prom == -1 || hum_prom == -1) {
+    Serial.println("⚠️ Error: No se pudieron calcular los promedios.");
+    return;
+  }
 
   // Mostrar los datos de los DHT22
   Serial.print("🌡️ DHT22_1: "); Serial.print(temp1); Serial.print("°C  ");
@@ -241,116 +316,77 @@ void readSensors() {
   Serial.print("📊 Promedio Humedad DHT22: "); Serial.print(hum_prom); Serial.println("%");
   Serial.println("------------------------------------------------");
 
+}
+
+void sendToFirebase() {
+  // Verificar conexión WiFi
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("🌐 Conectando a WiFi...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("\n✅ WiFi conectado");
+  }
+
+  // Obtener la hora actual
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("❌ Error al obtener la hora");
+    return;
+  }
+
+  // Formatear el timestamp
+  char timestamp[20];
+  strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  Serial.print("🕒 Timestamp: ");
+  Serial.println(timestamp);
+
+  // Crear el objeto JSON
+  StaticJsonDocument<512> doc;
+  doc["DS18"] = tempDS;
+  doc["Temp1"] = temp1;
+  doc["Temp2"] = temp2;
+  doc["Temp3"] = temp3;
+  doc["Hum1"] = hum1;
+  doc["Hum2"] = hum2;
+  doc["Hum3"] = hum3;
+  doc["PromT"] = temp_prom;
+  doc["PromH"] = hum_prom;
+  doc["pH"] = phValue;
+  doc["timestamp"] = timestamp; // Agregar el timestamp al JSON
+
+  // Serializar el objeto JSON a un string
+  String payload;
+  serializeJson(doc, payload);
+
+  // Crear un nodo único basado en la marca de tiempo
+  char firebasePath[128];
+  snprintf(firebasePath, sizeof(firebasePath), "/Incubadora1/%04d-%02d-%02d_%02d-%02d-%02d.json",
+           timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+           timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
   // Mandar datos a Firebase
   HTTPClient http;
-  http.begin("https://ranitas-test-default-rtdb.firebaseio.com/Incu1.json");
+  http.begin(String(firebaseURL) + firebasePath); // Enviar al nodo específico
   http.addHeader("Content-Type", "application/json");
-  String payload = "{\"DS18\":" + String(tempDS) + ",\"Temp1\":" + String(temp1) + ",\"Temp2\":" + String(temp2) + ",\"Temp3\":" + String(temp3) + ",\"Hum1\":" + String(hum1) + ",\"Hum2\":" + String(hum2) + ",\"Hum3\":" + String(hum3) + ",\"PromT\":" + String(temp_prom) + ",\"PromH\":" + String(hum_prom) + ",\"pH\":" + String(phValue) + "}";
   int httpCode = http.PUT(payload);
 
   if (httpCode == 200) {
-    Serial.println("Datos enviados a Firebase");
+    Serial.println("✅ Datos enviados a Firebase");
     String response = http.getString();
     Serial.println("📄 Respuesta del servidor:");
     Serial.println(response);
   } else {
-    Serial.println("Error: " + String(httpCode));
+    Serial.println("❌ Error al enviar datos: " + String(httpCode));
     String response = http.getString();
     Serial.println("📄 Respuesta del servidor:");
     Serial.println(response);
   }
   http.end();
-  
-}
 
-void setupFuzzy() {
-    // Definir variables de entrada
-    FuzzyInput* temp = new FuzzyInput(1);
-    FuzzySet* tempBaja = new FuzzySet(15, 20, 20, 22);
-    FuzzySet* tempMedia = new FuzzySet(21, 23, 23, 25);
-    FuzzySet* tempAlta = new FuzzySet(24, 26, 27, 30);
-    temp->addFuzzySet(tempBaja);
-    temp->addFuzzySet(tempMedia);
-    temp->addFuzzySet(tempAlta);
-    fuzzy.addFuzzyInput(temp);
-
-    FuzzyInput* hum = new FuzzyInput(2);
-    FuzzySet* humBaja = new FuzzySet(50, 60, 60, 70);
-    FuzzySet* humMedia = new FuzzySet(69, 75, 75, 85);
-    FuzzySet* humAlta = new FuzzySet(84, 90, 90, 100);
-    hum->addFuzzySet(humBaja);
-    hum->addFuzzySet(humMedia);
-    hum->addFuzzySet(humAlta);
-    fuzzy.addFuzzyInput(hum);
-
-    // 📌 FUTURA IMPLEMENTACIÓN: Agregar entrada de pH
-    // FuzzyInput* ph = new FuzzyInput(3);
-    // FuzzySet* phAcido = new FuzzySet(5.5, 6.0, 6.0, 6.5);
-    // FuzzySet* phNeutral = new FuzzySet(6.4, 7.0, 7.0, 7.5);
-    // FuzzySet* phBasico = new FuzzySet(7.4, 8.0, 8.0, 8.5);
-    // ph->addFuzzySet(phAcido);
-    // ph->addFuzzySet(phNeutral);
-    // ph->addFuzzySet(phBasico);
-    // fuzzy.addFuzzyInput(ph);
-
-    // Definir variables de salida
-    FuzzyOutput* calefaccion = new FuzzyOutput(1);
-    FuzzySet* calBaja = new FuzzySet(0, 50, 50, 100);
-    FuzzySet* calAlta = new FuzzySet(100, 150, 150, 200);
-    calefaccion->addFuzzySet(calBaja);
-    calefaccion->addFuzzySet(calAlta);
-    fuzzy.addFuzzyOutput(calefaccion);
-
-    FuzzyOutput* aspersor = new FuzzyOutput(2);
-    FuzzySet* aspApagado = new FuzzySet(0, 0, 0, 50);
-    FuzzySet* aspEncendido = new FuzzySet(50, 100, 100, 150);
-    aspersor->addFuzzySet(aspApagado);
-    aspersor->addFuzzySet(aspEncendido);
-    fuzzy.addFuzzyOutput(aspersor);
-
-    // 📌 FUTURA IMPLEMENTACIÓN: Agregar salida de control de pH
-    // FuzzyOutput* phControl = new FuzzyOutput(3);
-    // FuzzySet* phReducir = new FuzzySet(0, 50, 50, 100);
-    // FuzzySet* phMantener = new FuzzySet(100, 150, 150, 200);
-    // phControl->addFuzzySet(phReducir);
-    // phControl->addFuzzySet(phMantener);
-    // fuzzy.addFuzzyOutput(phControl);
-
-    // Definir reglas difusas
-    FuzzyRuleAntecedent* reglaTempBaja = new FuzzyRuleAntecedent();
-    reglaTempBaja->joinSingle(tempBaja);
-    FuzzyRuleConsequent* consCalefaccion = new FuzzyRuleConsequent();
-    consCalefaccion->addOutput(calAlta);
-    fuzzy.addFuzzyRule(new FuzzyRule(1, reglaTempBaja, consCalefaccion));
-
-    FuzzyRuleAntecedent* reglaHumBaja = new FuzzyRuleAntecedent();
-    reglaHumBaja->joinSingle(humBaja);
-    FuzzyRuleConsequent* consAspersor = new FuzzyRuleConsequent();
-    consAspersor->addOutput(aspEncendido);
-    fuzzy.addFuzzyRule(new FuzzyRule(2, reglaHumBaja, consAspersor));
-
-    // 📌 FUTURA IMPLEMENTACIÓN: Reglas para el control de pH
-    // FuzzyRuleAntecedent* reglaPhAlto = new FuzzyRuleAntecedent();
-    // reglaPhAlto->joinSingle(phBasico);
-    // FuzzyRuleConsequent* consPhControl = new FuzzyRuleConsequent();
-    // consPhControl->addOutput(phReducir);
-    // fuzzy.addFuzzyRule(new FuzzyRule(3, reglaPhAlto, consPhControl));
-}
-void evaluateFuzzy(){
-  Serial.println("Evaluando fuzzy...");
-  Serial.print("Temperatura: "); Serial.println(temp_prom);
-  Serial.print("Humedad: "); Serial.println(hum_prom);
-  // Serial.print("PH: "); Serial.println(ph);
-
-  fuzzy.setInput(1, temp_prom);
-  fuzzy.setInput(2, hum_prom);
-  // fuzzy.setInput(3, ph);
-
-  int calefaccion = fuzzy.defuzzify(1);
-  int aspersor = fuzzy.defuzzify(2);
-  // int phControl = fuzzy.defuzzify(3);
-
-  digitalWrite(CALEFACTOR, calefaccion > CALEFACTOR_THRESHOLD ? HIGH : LOW);
-  digitalWrite(ASPERSOR, aspersor > ASPERSOR_THRESHOLD ? HIGH : LOW);
-  // digitalWrite(phRegulador, phControl > PH_THRESHOLD ? HIGH : LOW);
+  // Desconectar WiFi para ahorrar energía
+  WiFi.disconnect(true);
+  Serial.println("🌐 WiFi desconectado");
 }

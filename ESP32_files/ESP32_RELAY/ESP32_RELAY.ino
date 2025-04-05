@@ -2,16 +2,17 @@
 #include <HTTPClient.h>
 #include <Fuzzy.h>
 #include <time.h>
+#include <ArduinoJson.h>
 
 // Credenciales WiFi
 const char* ssid = "Bandle";
 const char* password = "YordlepeLudito1120";
 
-// Firebase y Sunrise-Sunset API
+// Firebase y APIs
 const char* firebaseURL = "https://ranitas-test-default-rtdb.firebaseio.com/Incu1.json";
-const char* sunriseAPI = "https://api.sunrise-sunset.org/json?lat=19.432608&lng=-99.133209&formatted=0"; // Coordenadas de CDMX
+const char* sunriseAPI = "https://api.sunrise-sunset.org/json?lat=19.432608&lng=-99.133209&formatted=0";
 
-// Relés
+// Pines de relés
 #define RELAY_CALEFACTOR 15
 #define RELAY_ESPERSOR 2
 #define RELAY_PH 4
@@ -19,13 +20,15 @@ const char* sunriseAPI = "https://api.sunrise-sunset.org/json?lat=19.432608&lng=
 #define RELAY_CASCADA 17
 
 // Variables globales
-float PromT = 0.0, PromH = 0.0, pH = 0.0; // Últimos valores obtenidos
-float lastPromT = -1.0, lastPromH = -1.0, lastPH = -1.0; // Valores anteriores para comparación
-time_t sunriseTime = 0;                  // Hora del amanecer en segundos desde epoch
-time_t lightOffTime = 0;                 // Hora para apagar la luz
-bool dataValid = false;                  // Indica si los datos de Firebase son válidos
-unsigned long lastFirebaseRequest = 0;   // Tiempo de la última solicitud a Firebase
-const unsigned long firebaseInterval = 300000; // 5 minutos en milisegundos
+float PromT = 0.0, PromH = 0.0, pH = 0.0;
+float lastPromT = -1.0, lastPromH = -1.0, lastPH = -1.0;
+time_t sunriseTime = 0;
+time_t lightOnTime = 0;
+time_t lightOffTime = 0;
+bool dataValid = false;
+bool rainSimulated = false;
+unsigned long lastFirebaseRequest = 0;
+const unsigned long firebaseInterval = 300000; // 5 minutos
 
 Fuzzy fuzzy;
 
@@ -48,13 +51,24 @@ void setup() {
     pinMode(RELAY_LUZ, OUTPUT);
     pinMode(RELAY_CASCADA, OUTPUT);
 
+    // Inicializar todos los relés en LOW
+    digitalWrite(RELAY_CALEFACTOR, LOW);
+    digitalWrite(RELAY_ESPERSOR, LOW);
+    digitalWrite(RELAY_PH, LOW);
+    digitalWrite(RELAY_LUZ, LOW);
+    digitalWrite(RELAY_CASCADA, LOW);
+
     // Configurar fuzzy
     setupFuzzy();
 
-    // Configurar zona horaria para México (CST)
+    // Configurar zona horaria (UTC-6 para CDMX)
     configTime(-6 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+    Serial.println("⏰ Configurando hora...");
+    while (time(nullptr) < 24 * 3600) {
+        delay(500);
+    }
 
-    // Obtener la hora del amanecer
+    // Obtener hora del amanecer
     getSunriseTime();
 
     // Obtener datos iniciales de Firebase
@@ -63,38 +77,39 @@ void setup() {
 
 void loop() {
     time_t now = time(nullptr);
-    struct tm* localTime = localtime(&now);
+    struct tm* timeinfo = localtime(&now);
 
-    // Ejecutar consulta de la hora del amanecer a la medianoche (UTC-6)
-    if (localTime->tm_hour == 0 && localTime->tm_min == 0 && localTime->tm_sec == 0) {
+    // Actualizar amanecer a medianoche
+    if (timeinfo->tm_hour == 0 && timeinfo->tm_min == 0 && timeinfo->tm_sec < 10) {
         getSunriseTime();
     }
 
-    if(!dataValid) {
+    if (!dataValid) {
         Serial.println("⚠️ Esperando datos válidos de Firebase...");
-        getFirebaseData(); // Intentar obtener datos de Firebase
-        delay(1000); // Esperar un segundo antes de volver a intentar
+        getFirebaseData();
+        delay(1000);
         return;
     }
 
-    // Obtener datos de Firebase cada 5 minutos
+    // Actualizar datos de Firebase cada 5 minutos
     if (millis() - lastFirebaseRequest >= firebaseInterval) {
         lastFirebaseRequest = millis();
         getFirebaseData();
     }
 
-    // Evaluar fuzzy solo si los datos han cambiado
+    // Ejecutar lógica difusa si hay cambios
     if (dataValid && (PromT != lastPromT || PromH != lastPromH || pH != lastPH)) {
         lastPromT = PromT;
         lastPromH = PromH;
         lastPH = pH;
-
         Serial.println("🔄 Datos cambiaron, ejecutando fuzzy...");
         applyFuzzyLogic();
     }
 
-    // Controlar la luz según la hora
+    // Controlar subsistemas
     controlLight();
+    controlHumedad();
+    controlWaterfall(); // Para oxigenación del agua
 }
 
 void getFirebaseData() {
@@ -103,39 +118,38 @@ void getFirebaseData() {
         http.begin(firebaseURL);
         int httpCode = http.GET();
 
-        if (httpCode == 200) { // Solicitud exitosa
+        if (httpCode == 200) {
             String payload = http.getString();
             Serial.println("📥 Datos recibidos de Firebase:");
             Serial.println(payload);
 
-            // Parsear JSON manualmente
-            int promTIndex = payload.indexOf("\"PromT\":");
-            int promHIndex = payload.indexOf("\"PromH\":");
-            int pHIndex = payload.indexOf("\"pH\":");
+            // Parsear JSON con ArduinoJson
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, payload);
 
-            if (promTIndex != -1 && promHIndex != -1 && pHIndex != -1) {
-                PromT = payload.substring(promTIndex + 8, payload.indexOf(",", promTIndex)).toFloat();
-                PromH = payload.substring(promHIndex + 8, payload.indexOf(",", promHIndex)).toFloat();
-                pH = payload.substring(pHIndex + 5, payload.indexOf("}", pHIndex)).toFloat();
+            if (doc.containsKey("PromT") && doc.containsKey("PromH") && doc.containsKey("pH")) {
+                PromT = doc["PromT"].as<float>();
+                PromH = doc["PromH"].as<float>();
+                pH = doc["pH"].as<float>();
 
-                Serial.print("🌡️ PromT: "); Serial.println(PromT);
-                Serial.print("💧 PromH: "); Serial.println(PromH);
-                Serial.print("📏 pH: "); Serial.println(pH);
+                Serial.printf("🌡️ PromT: %.1f°C\n", PromT);
+                Serial.printf("💧 PromH: %.1f%%\n", PromH);
+                Serial.printf("📏 pH: %.1f\n", pH);
 
-                dataValid = true; // Datos válidos
+                dataValid = true;
             } else {
-                Serial.println("❌ Error: Datos incompletos en Firebase.");
+                Serial.println("❌ Error: Datos incompletos en Firebase");
                 dataValid = false;
             }
         } else {
-            Serial.print("❌ Error al obtener datos de Firebase. Código HTTP: ");
-            Serial.println(httpCode);
+            Serial.printf("❌ Error HTTP: %d\n", httpCode);
             dataValid = false;
         }
         http.end();
     } else {
-        Serial.println("⚠️ WiFi desconectado. Intentando reconectar...");
+        Serial.println("⚠️ WiFi desconectado. Reconectando...");
         WiFi.begin(ssid, password);
+        delay(5000);
     }
 }
 
@@ -145,157 +159,262 @@ void getSunriseTime() {
         http.begin(sunriseAPI);
         int httpCode = http.GET();
 
-        if (httpCode == 200) { // Solicitud exitosa
+        if (httpCode == 200) {
             String payload = http.getString();
-            Serial.println("📥 Datos recibidos de Sunrise API:");
-            Serial.println(payload);
+            Serial.println("🌅 Datos de amanecer recibidos:");
 
-            // Parsear JSON manualmente para obtener la hora del amanecer
-            int sunriseIndex = payload.indexOf("\"sunrise\":\"");
-            if (sunriseIndex != -1) {
-                String sunriseStr = payload.substring(sunriseIndex + 11, payload.indexOf("\"", sunriseIndex + 11));
+            DynamicJsonDocument doc(2048);
+            deserializeJson(doc, payload);
+
+            if (doc["status"] == "OK") {
+                String sunriseStr = doc["results"]["sunrise"].as<String>();
                 struct tm tm;
-                strptime(sunriseStr.c_str(), "%Y-%m-%dT%H:%M:%S", &tm);
-                time_t utcSunriseTime = mktime(&tm);
+                strptime(sunriseStr.c_str(), "%Y-%m-%dT%H:%M:%S%z", &tm);
+                time_t utcSunrise = mktime(&tm);
 
-                // Convertir UTC a hora central de México (CST)
-                time_t localSunriseTime = utcSunriseTime - (6 * 3600); // UTC-6
-                struct tm* localTime = localtime(&localSunriseTime);
-
-                // Ajustar si es horario de verano (DST)
-                if (localTime->tm_isdst > 0) {
-                    localSunriseTime += 3600; // UTC-5 durante horario de verano
+                // Ajustar a zona horaria (UTC-6)
+                sunriseTime = utcSunrise - (6 * 3600);
+                
+                // Ajustar para horario de verano si es necesario
+                struct tm* local = localtime(&sunriseTime);
+                if (local->tm_isdst > 0) {
+                    sunriseTime += 3600;
                 }
 
-                sunriseTime = localSunriseTime;
+                // Calcular horario de luz (7 horas de luz a partir de 1 hora después del amanecer)
+                lightOnTime = sunriseTime + 3600;
+                lightOffTime = lightOnTime + 25200; // 7 horas = 25200 segundos
 
-                Serial.print("🌅 Hora del amanecer (CST): ");
-                Serial.println(ctime(&sunriseTime));
-
-                // Calcular la hora para apagar la luz (8 horas después del amanecer)
-                lightOffTime = sunriseTime + (8 * 3600);
-                Serial.print("💡 Hora para apagar la luz (CST): ");
-                Serial.println(ctime(&lightOffTime));
+                Serial.printf("🌅 Amanecer: %s", ctime(&sunriseTime));
+                Serial.printf("💡 Luz ON: %s", ctime(&lightOnTime));
+                Serial.printf("💡 Luz OFF: %s", ctime(&lightOffTime));
             }
         } else {
-            Serial.print("❌ Error al obtener datos de Sunrise API. Código HTTP: ");
-            Serial.println(httpCode);
+            Serial.printf("❌ Error al obtener amanecer: %d\n", httpCode);
         }
         http.end();
     }
 }
 
 void controlLight() {
-    static bool lightState = LOW; // Estado actual de la luz (inicialmente apagada)
     time_t now = time(nullptr);
+    static bool lightState = false;
 
-    if (now >= sunriseTime && now < lightOffTime) {
-        if (lightState == LOW) { // Solo imprimir si la luz estaba apagada
-            digitalWrite(RELAY_LUZ, HIGH); // Encender la luz
-            lightState = HIGH;
-            Serial.println("💡 Luz encendida");
-        }
-    } else {
-        if (lightState == HIGH) { // Solo imprimir si la luz estaba encendida
-            digitalWrite(RELAY_LUZ, LOW); // Apagar la luz
-            lightState = LOW;
-            Serial.println("💡 Luz apagada");
-        }
+    bool shouldBeOn = (now >= lightOnTime && now < lightOffTime);
+    
+    if (shouldBeOn && !lightState) {
+        digitalWrite(RELAY_LUZ, HIGH);
+        lightState = true;
+        Serial.println("💡 Luz encendida");
+    } else if (!shouldBeOn && lightState) {
+        digitalWrite(RELAY_LUZ, LOW);
+        lightState = false;
+        Serial.println("💡 Luz apagada");
     }
 }
 
-void applyFuzzyLogic() {
-    // Configurar entradas difusas
-    fuzzy.setInput(1, PromT);
-    fuzzy.setInput(2, PromH);
-    fuzzy.setInput(3, pH);
+void controlHumedad() {
+    static unsigned long lastRainTime = 0;
+    const unsigned long rainInterval = 3600000; // 1 hora
 
-    // Ejecutar lógica difusa
-    fuzzy.fuzzify();
+    // Pre-reproducción (<70%) o reproducción (70-90%)
+    if (PromH < 70 && !rainSimulated) {
+        // Simular lluvia por 30 segundos
+        digitalWrite(RELAY_ESPERSOR, HIGH);
+        Serial.println("🌧️ Activando aspersores para simular lluvia");
+        delay(30000);
+        digitalWrite(RELAY_ESPERSOR, LOW);
+        rainSimulated = true;
+        lastRainTime = millis();
+    } 
+    // Si la humedad es adecuada, resetear flag de lluvia
+    else if (PromH >= 70 && PromH <= 90) {
+        rainSimulated = false;
+    }
+    // Si ha pasado 1 hora y aún necesitamos más humedad
+    else if (PromH < 90 && millis() - lastRainTime >= rainInterval) {
+        rainSimulated = false;
+    }
+}
 
-    // Obtener salidas difusas
-    float calefaccion = fuzzy.defuzzify(1);
-    float aspersor = fuzzy.defuzzify(2);
-    float phControl = fuzzy.defuzzify(3);
+void controlWaterfall() {
+    // Activar cascada 10 minutos cada hora para oxigenación
+    static unsigned long lastWaterfallOn = 0;
+    const unsigned long waterfallInterval = 3600000; // 1 hora
+    const unsigned long waterfallDuration = 600000;  // 10 minutos
 
-    // Imprimir resultados
-    Serial.print("🔥 Calefacción: "); Serial.println(calefaccion);
-    Serial.print("💦 Aspersor: "); Serial.println(aspersor);
-    Serial.print("⚗️ Control de pH: "); Serial.println(phControl);
-
-    // Controlar relés según las salidas
-    digitalWrite(RELAY_CALEFACTOR, calefaccion > 50 ? HIGH : LOW);
-    digitalWrite(RELAY_ESPERSOR, aspersor > 50 ? HIGH : LOW);
-    digitalWrite(RELAY_PH, phControl > 50 ? HIGH : LOW);
+    if (millis() - lastWaterfallOn >= waterfallInterval) {
+        digitalWrite(RELAY_CASCADA, HIGH);
+        Serial.println("💦 Activando cascada para oxigenación");
+        delay(waterfallDuration);
+        digitalWrite(RELAY_CASCADA, LOW);
+        lastWaterfallOn = millis();
+    }
 }
 
 void setupFuzzy() {
-    // Configurar entradas difusas
-    FuzzyInput* temp = new FuzzyInput(1);
-    FuzzySet* tempBaja = new FuzzySet(15, 20, 20, 22);
-    FuzzySet* tempMedia = new FuzzySet(21, 23, 23, 25);
-    FuzzySet* tempAlta = new FuzzySet(24, 26, 27, 30);
-    temp->addFuzzySet(tempBaja);
-    temp->addFuzzySet(tempMedia);
-    temp->addFuzzySet(tempAlta);
-    fuzzy.addFuzzyInput(temp);
+    
+    // 1. Entrada: Temperatura (ºC)
+    FuzzyInput* temperature = new FuzzyInput(1);
+    
+    FuzzySet* tempCold = new FuzzySet(15, 15, 18, 21);      // Frío
+    FuzzySet* tempIdeal = new FuzzySet(20, 22, 24, 26);      // Ideal
+    FuzzySet* tempHot = new FuzzySet(25, 28, 30, 30);        // Caliente
+    
+    temperature->addFuzzySet(tempCold);
+    temperature->addFuzzySet(tempIdeal);
+    temperature->addFuzzySet(tempHot);
+    fuzzy.addFuzzyInput(temperature);
 
-    FuzzyInput* hum = new FuzzyInput(2);
-    FuzzySet* humBaja = new FuzzySet(50, 60, 60, 70);
-    FuzzySet* humMedia = new FuzzySet(69, 75, 75, 85);
-    FuzzySet* humAlta = new FuzzySet(84, 90, 90, 100);
-    hum->addFuzzySet(humBaja);
-    hum->addFuzzySet(humMedia);
-    hum->addFuzzySet(humAlta);
-    fuzzy.addFuzzyInput(hum);
+    // 2. Entrada: Humedad (%)
+    FuzzyInput* humidity = new FuzzyInput(2);
+    
+    FuzzySet* humDry = new FuzzySet(50, 50, 60, 70);         // Seco
+    FuzzySet* humIdeal = new FuzzySet(65, 75, 75, 85);       // Ideal
+    FuzzySet* humWet = new FuzzySet(80, 90, 100, 100);       // Húmedo
+    
+    humidity->addFuzzySet(humDry);
+    humidity->addFuzzySet(humIdeal);
+    humidity->addFuzzySet(humWet);
+    fuzzy.addFuzzyInput(humidity);
 
-    FuzzyInput* ph = new FuzzyInput(3);
-    FuzzySet* phAcido = new FuzzySet(5.5, 6.0, 6.0, 6.5);
-    FuzzySet* phNeutral = new FuzzySet(6.4, 7.0, 7.0, 7.5);
-    FuzzySet* phBasico = new FuzzySet(7.4, 8.0, 8.0, 8.5);
-    ph->addFuzzySet(phAcido);
-    ph->addFuzzySet(phNeutral);
-    ph->addFuzzySet(phBasico);
-    fuzzy.addFuzzyInput(ph);
+    // 3. Entrada: pH
+    FuzzyInput* phInput = new FuzzyInput(3);
+    
+    FuzzySet* phAcidic = new FuzzySet(5.5, 5.5, 6.0, 6.5);   // Ácido
+    FuzzySet* phNeutral = new FuzzySet(6.3, 6.8, 7.2, 7.7);  // Neutral
+    FuzzySet* phBasic = new FuzzySet(7.5, 8.0, 8.5, 8.5);    // Básico
+    
+    phInput->addFuzzySet(phAcidic);
+    phInput->addFuzzySet(phNeutral);
+    phInput->addFuzzySet(phBasic);
+    fuzzy.addFuzzyInput(phInput);
 
-    // Configurar salidas difusas
-    FuzzyOutput* calefaccion = new FuzzyOutput(1);
-    FuzzySet* calBaja = new FuzzySet(0, 50, 50, 100);
-    FuzzySet* calAlta = new FuzzySet(100, 150, 150, 200);
-    calefaccion->addFuzzySet(calBaja);
-    calefaccion->addFuzzySet(calAlta);
-    fuzzy.addFuzzyOutput(calefaccion);
+    // 1. Salida: Calefactor (0-100%)
+    FuzzyOutput* heater = new FuzzyOutput(1);
+    
+    FuzzySet* heaterOff = new FuzzySet(0, 0, 20, 40);        // Apagado
+    FuzzySet* heaterLow = new FuzzySet(30, 50, 50, 70);      // Baja potencia
+    FuzzySet* heaterHigh = new FuzzySet(60, 80, 100, 100);   // Alta potencia
+    
+    heater->addFuzzySet(heaterOff);
+    heater->addFuzzySet(heaterLow);
+    heater->addFuzzySet(heaterHigh);
+    fuzzy.addFuzzyOutput(heater);
 
-    FuzzyOutput* aspersor = new FuzzyOutput(2);
-    FuzzySet* aspApagado = new FuzzySet(0, 0, 0, 50);
-    FuzzySet* aspEncendido = new FuzzySet(50, 100, 100, 150);
-    aspersor->addFuzzySet(aspApagado);
-    aspersor->addFuzzySet(aspEncendido);
-    fuzzy.addFuzzyOutput(aspersor);
+    // 2. Salida: Aspersor (0-100%)
+    FuzzyOutput* sprinkler = new FuzzyOutput(2);
+    
+    FuzzySet* sprinklerOff = new FuzzySet(0, 0, 20, 40);     // Apagado
+    FuzzySet* sprinklerLow = new FuzzySet(30, 50, 50, 70);   // Riego bajo
+    FuzzySet* sprinklerHigh = new FuzzySet(60, 80, 100, 100);// Riego alto
+    
+    sprinkler->addFuzzySet(sprinklerOff);
+    sprinkler->addFuzzySet(sprinklerLow);
+    sprinkler->addFuzzySet(sprinklerHigh);
+    fuzzy.addFuzzyOutput(sprinkler);
 
+    // 3. Salida: Control de pH (0-100%)
     FuzzyOutput* phControl = new FuzzyOutput(3);
-    FuzzySet* phReducir = new FuzzySet(0, 50, 50, 100);
-    FuzzySet* phMantener = new FuzzySet(100, 150, 150, 200);
-    phControl->addFuzzySet(phReducir);
-    phControl->addFuzzySet(phMantener);
+    
+    FuzzySet* phDecrease = new FuzzySet(0, 0, 20, 40);       // Reducir pH (CO2)
+    FuzzySet* phMaintain = new FuzzySet(30, 50, 50, 70);     // Mantener
+    FuzzySet* phIncrease = new FuzzySet(60, 80, 100, 100);   // Aumentar pH (alcalino)
+    
+    phControl->addFuzzySet(phDecrease);
+    phControl->addFuzzySet(phMaintain);
+    phControl->addFuzzySet(phIncrease);
     fuzzy.addFuzzyOutput(phControl);
 
-    // Configurar reglas difusas
-    FuzzyRuleAntecedent* reglaTempBaja = new FuzzyRuleAntecedent();
-    reglaTempBaja->joinSingle(tempBaja);
-    FuzzyRuleConsequent* actCalefactor = new FuzzyRuleConsequent();
-    actCalefactor->addOutput(calAlta);
-    fuzzy.addFuzzyRule(new FuzzyRule(1, reglaTempBaja, actCalefactor));
+    // Reglas difusas
 
-    FuzzyRuleAntecedent* reglaHumBaja = new FuzzyRuleAntecedent();
-    reglaHumBaja->joinSingle(humBaja);
-    FuzzyRuleConsequent* actAspersor = new FuzzyRuleConsequent();
-    actAspersor->addOutput(aspEncendido);
-    fuzzy.addFuzzyRule(new FuzzyRule(2, reglaHumBaja, actAspersor));
+    // Reglas para temperatura
+    // Si temperatura es fría ENTONCES calefactor alta
+    FuzzyRuleAntecedent* ifTempCold = new FuzzyRuleAntecedent();
+    ifTempCold->joinSingle(tempCold);
+    FuzzyRuleConsequent* thenHeaterHigh = new FuzzyRuleConsequent();
+    thenHeaterHigh->addOutput(heaterHigh);
+    fuzzy.addFuzzyRule(new FuzzyRule(1, ifTempCold, thenHeaterHigh));
 
-    FuzzyRuleAntecedent* reglaPhBasico = new FuzzyRuleAntecedent();
-    reglaPhBasico->joinSingle(phBasico);
-    FuzzyRuleConsequent* actPhControl = new FuzzyRuleConsequent();
-    actPhControl->addOutput(phReducir);
-    fuzzy.addFuzzyRule(new FuzzyRule(3, reglaPhBasico, actPhControl));
+    // Si temperatura es ideal ENTONCES calefactor baja
+    FuzzyRuleAntecedent* ifTempIdeal = new FuzzyRuleAntecedent();
+    ifTempIdeal->joinSingle(tempIdeal);
+    FuzzyRuleConsequent* thenHeaterLow = new FuzzyRuleConsequent();
+    thenHeaterLow->addOutput(heaterLow);
+    fuzzy.addFuzzyRule(new FuzzyRule(2, ifTempIdeal, thenHeaterLow));
+
+    // Si temperatura es caliente ENTONCES calefactor apagado
+    FuzzyRuleAntecedent* ifTempHot = new FuzzyRuleAntecedent();
+    ifTempHot->joinSingle(tempHot);
+    FuzzyRuleConsequent* thenHeaterOff = new FuzzyRuleConsequent();
+    thenHeaterOff->addOutput(heaterOff);
+    fuzzy.addFuzzyRule(new FuzzyRule(3, ifTempHot, thenHeaterOff));
+
+    // Reglas para humedad
+    // Si humedad es baja ENTONCES aspersor alto
+    FuzzyRuleAntecedent* ifHumDry = new FuzzyRuleAntecedent();
+    ifHumDry->joinSingle(humDry);
+    FuzzyRuleConsequent* thenSprinklerHigh = new FuzzyRuleConsequent();
+    thenSprinklerHigh->addOutput(sprinklerHigh);
+    fuzzy.addFuzzyRule(new FuzzyRule(4, ifHumDry, thenSprinklerHigh));
+
+    // Si humedad es ideal ENTONCES aspersor bajo
+    FuzzyRuleAntecedent* ifHumIdeal = new FuzzyRuleAntecedent();
+    ifHumIdeal->joinSingle(humIdeal);
+    FuzzyRuleConsequent* thenSprinklerLow = new FuzzyRuleConsequent();
+    thenSprinklerLow->addOutput(sprinklerLow);
+    fuzzy.addFuzzyRule(new FuzzyRule(5, ifHumIdeal, thenSprinklerLow));
+
+    // Si humedad es alta ENTONCES aspersor apagado
+    FuzzyRuleAntecedent* ifHumWet = new FuzzyRuleAntecedent();
+    ifHumWet->joinSingle(humWet);
+    FuzzyRuleConsequent* thenSprinklerOff = new FuzzyRuleConsequent();
+    thenSprinklerOff->addOutput(sprinklerOff);
+    fuzzy.addFuzzyRule(new FuzzyRule(6, ifHumWet, thenSprinklerOff));
+
+    // Reglas para pH
+    // Si pH es ácido ENTONCES aumentar pH
+    FuzzyRuleAntecedent* ifPhAcidic = new FuzzyRuleAntecedent();
+    ifPhAcidic->joinSingle(phAcidic);
+    FuzzyRuleConsequent* thenPhIncrease = new FuzzyRuleConsequent();
+    thenPhIncrease->addOutput(phIncrease);
+    fuzzy.addFuzzyRule(new FuzzyRule(7, ifPhAcidic, thenPhIncrease));
+
+    // Si pH es neutral ENTONCES mantener
+    FuzzyRuleAntecedent* ifPhNeutral = new FuzzyRuleAntecedent();
+    ifPhNeutral->joinSingle(phNeutral);
+    FuzzyRuleConsequent* thenPhMaintain = new FuzzyRuleConsequent();
+    thenPhMaintain->addOutput(phMaintain);
+    fuzzy.addFuzzyRule(new FuzzyRule(8, ifPhNeutral, thenPhMaintain));
+
+    // Si pH es básico ENTONCES reducir pH
+    FuzzyRuleAntecedent* ifPhBasic = new FuzzyRuleAntecedent();
+    ifPhBasic->joinSingle(phBasic);
+    FuzzyRuleConsequent* thenPhDecrease = new FuzzyRuleConsequent();
+    thenPhDecrease->addOutput(phDecrease);
+    fuzzy.addFuzzyRule(new FuzzyRule(9, ifPhBasic, thenPhDecrease));
+}
+
+void applyFuzzyLogic() {
+    // Establecer entradas
+    fuzzy.setInput(1, PromT);
+    fuzzy.setInput(2, PromH);
+    fuzzy.setInput(3, pH);
+    
+    // Ejecutar lógica difusa
+    fuzzy.fuzzify();
+    
+    // Obtener salidas
+    float heaterOutput = fuzzy.defuzzify(1);
+    float sprinklerOutput = fuzzy.defuzzify(2);
+    float phControlOutput = fuzzy.defuzzify(3);
+    
+    // Controlar relés con las salidas difusas
+    digitalWrite(RELAY_CALEFACTOR, heaterOutput > 70 ? HIGH : (heaterOutput < 30 ? LOW : LOW));
+    digitalWrite(RELAY_ESPERSOR, sprinklerOutput > 70 ? HIGH : (sprinklerOutput < 30 ? LOW : LOW));
+    digitalWrite(RELAY_PH, phControlOutput > 70 ? HIGH : (phControlOutput < 30 ? LOW : digitalRead(RELAY_PH)));
+    
+    Serial.printf("🔥 Calefacción: %.1f%%\n", heaterOutput);
+    Serial.printf("💦 Aspersor: %.1f%%\n", sprinklerOutput);
+    Serial.printf("⚗️ Control pH: %.1f%%\n", phControlOutput);
 }
