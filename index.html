@@ -50,6 +50,34 @@
             const db = getDatabase(app);
             const storage = getStorage(app);
 
+            // Referencia al campo "cascada" en Firebase
+            const cascadaRef = dbRef(db, 'Incu1/cascada');
+
+            // Variable para almacenar el estado actual
+            let cascadaState = "OFF";
+
+            // Escuchar el estado actual desde Firebase
+            onValue(cascadaRef, (snapshot) => {
+                cascadaState = snapshot.val() || "OFF"; // Si no existe, inicializa como "OFF"
+                const button = document.getElementById('toggleCascada');
+                button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
+            });
+
+            // Manejar el clic en el botón
+            document.getElementById('toggleCascada').addEventListener('click', () => {
+                // Alternar el estado
+                const newState = cascadaState === "ON" ? "OFF" : "ON";
+
+                // Actualizar el estado en Firebase
+                set(cascadaRef, newState)
+                    .then(() => {
+                        console.log(`Estado de cascada cambiado a: ${newState}`);
+                    })
+                    .catch((error) => {
+                        console.error("Error al actualizar el estado de cascada:", error);
+                    });
+            });
+
             // Obtener la referencia a la imagen SOLO UNA VEZ
             const imageRef = storageRef(storage, 'Incubadora_1/foto.jpg');
 
@@ -104,6 +132,27 @@
             .sensor-card p {
                 font-size: 1.2em;
                 margin: 0;
+            }
+        </style>
+
+        <style>
+            .btn-cascada {
+                background-color: #007bff;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                font-size: 16px;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+        
+            .btn-cascada:hover {
+                background-color: #0056b3;
+            }
+        
+            .btn-cascada:active {
+                background-color: #003f7f;
             }
         </style>
     </head>
@@ -332,6 +381,9 @@
                             <div class="sensor-card">
                                 <h3>pH</h3>
                                 <p id="pH">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <button id="toggleCascada" class="btn-cascada">Activar Cascada</button>
                             </div>
                         </div>
                         <div class="row">
