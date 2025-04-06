@@ -108,6 +108,56 @@
                 }
             }
 
+            function generateCSV(data) {
+                // Define los encabezados del archivo CSV
+                const headers = ["DS18", "Temp1", "Temp2", "Temp3", "Hum1", "Hum2", "Hum3", "PromT", "PromH", "pH", "timestamp"];
+                
+                // Crea un array para almacenar las filas del CSV
+                const rows = [headers.join(",")]; // Agrega los encabezados como la primera fila
+
+                // Agrega los datos como una fila
+                const row = [
+                    data.DS18 || 0,
+                    data.Temp1 || 0,
+                    data.Temp2 || 0,
+                    data.Temp3 || 0,
+                    data.Hum1 || 0,
+                    data.Hum2 || 0,
+                    data.Hum3 || 0,
+                    data.PromT || 0,
+                    data.PromH || 0,
+                    data.pH || 0,
+                    new Date().toISOString() // Agrega un timestamp actual
+                ];
+                rows.push(row.join(","));
+
+                // Convierte las filas a un string CSV
+                return rows.join("\n");
+            }
+
+            function downloadCSV(data) {
+                const csvContent = generateCSV(data);
+
+                // Crea un enlace para descargar el archivo
+                const blob = new Blob([csvContent], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "datos_sensores.csv"; // Nombre del archivo
+                a.click();
+
+                // Limpia el objeto URL
+                URL.revokeObjectURL(url);
+            }
+
+            // Evento para el botón de descarga
+            document.getElementById("downloadCSV").addEventListener("click", () => {
+                onValue(dataRef, (snapshot) => {
+                    const data = snapshot.val();
+                    downloadCSV(data);
+                });
+            });
+
             updateImage();
             setInterval(updateImage, 15000);
 
@@ -384,6 +434,9 @@
                             </div>
                             <div class="sensor-card">
                                 <button id="toggleCascada" class="btn-cascada">Activar Cascada</button>
+                            </div>
+                            <div class="sensor-card">
+                                <button id="Descarga CSV" class="btn-cascada">Descargar CSV</button>
                             </div>
                         </div>
                         <div class="row">
