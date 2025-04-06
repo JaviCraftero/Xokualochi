@@ -160,8 +160,6 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  readSensors();
-
   if (currentMillis - lastSensorReadTime >= sensorReadInterval) {
     lastSensorReadTime = currentMillis;
     readSensors();
@@ -339,7 +337,7 @@ void sendToFirebase() {
 
   // Formatear el timestamp
   char timestamp[20];
-  strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", &timeinfo); // Reemplazar ':' por '-'
   Serial.print("🕒 Timestamp: ");
   Serial.println(timestamp);
 
@@ -382,10 +380,10 @@ void sendToFirebase() {
 
   // **Payload 2: Guardar datos con un timestamp único**
   char firebasePath[128];
-  snprintf(firebasePath, sizeof(firebasePath), "/Incu1/%04d-%02d-%02d_%02d-%02d-%02d.json",
-           timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-           timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+  snprintf(firebasePath, sizeof(firebasePath), "/Incu1/%s.json", timestamp); // Usar el timestamp corregido
+  String firebaseTimestampURL = "https://ranitas-test-default-rtdb.firebaseio.com" + String(firebasePath);
 
+  http.begin(firebaseTimestampURL);
   http.begin(String(firebaseURL) + firebasePath); // Nodo único basado en timestamp
   http.addHeader("Content-Type", "application/json");
   httpCode = http.PUT(payload);

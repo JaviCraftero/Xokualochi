@@ -10,11 +10,12 @@ const char* password = "YordlepeLudito1120";
 
 // Firebase y APIs
 const char* firebaseURL = "https://ranitas-test-default-rtdb.firebaseio.com/Incu1.json";
+const char* cascadaURL = "https://ranitas-test-default-rtdb.firebaseio.com/CasStatus.json";
 const char* sunriseAPI = "https://api.sunrise-sunset.org/json?lat=19.432608&lng=-99.133209&formatted=0";
 
 // Pines de relés
 #define RELAY_CALEFACTOR 15
-#define RELAY_ESPERSOR 2
+#define RELAY_ASPERSOR 2
 #define RELAY_PH 4
 #define RELAY_LUZ 16
 #define RELAY_CASCADA 17
@@ -27,6 +28,7 @@ time_t lightOnTime = 0;
 time_t lightOffTime = 0;
 bool dataValid = false;
 bool rainSimulated = false;
+String cascadaStateCurrent = ""; // Estado actual de la cascada ("ON" o "OFF")
 unsigned long lastFirebaseRequest = 0;
 const unsigned long firebaseInterval = 300000; // 5 minutos
 
@@ -46,14 +48,14 @@ void setup() {
 
     // Configurar pines de relés
     pinMode(RELAY_CALEFACTOR, OUTPUT);
-    pinMode(RELAY_ESPERSOR, OUTPUT);
+    pinMode(RELAY_ASPERSOR, OUTPUT);
     pinMode(RELAY_PH, OUTPUT);
     pinMode(RELAY_LUZ, OUTPUT);
     pinMode(RELAY_CASCADA, OUTPUT);
 
     // Inicializar todos los relés en LOW
     digitalWrite(RELAY_CALEFACTOR, LOW);
-    digitalWrite(RELAY_ESPERSOR, LOW);
+    digitalWrite(RELAY_ASPERSOR, LOW);
     digitalWrite(RELAY_PH, LOW);
     digitalWrite(RELAY_LUZ, LOW);
     digitalWrite(RELAY_CASCADA, LOW);
@@ -109,12 +111,13 @@ void loop() {
     // Controlar subsistemas
     controlLight();
     controlHumedad();
-    controlWaterfall(); // Para oxigenación del agua
 }
 
 void getFirebaseData() {
     if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;
+
+        // Obtener datos de Firebase (Incu1)
         http.begin(firebaseURL);
         int httpCode = http.GET();
 
@@ -142,8 +145,47 @@ void getFirebaseData() {
                 dataValid = false;
             }
         } else {
-            Serial.printf("❌ Error HTTP: %d\n", httpCode);
+            Serial.printf("❌ Error HTTP al obtener datos de Firebase: %d\n", httpCode);
             dataValid = false;
+        }
+        http.end();
+
+        // Obtener datos de la cascada (CasStatus)
+        http.begin(cascadaURL);
+        httpCode = http.GET();
+
+        if (httpCode == 200) {
+            String payload = http.getString();
+            Serial.println("📥 Datos recibidos de cascada:");
+            Serial.println(payload);
+
+            // Parsear JSON con ArduinoJson
+            DynamicJsonDocument doc(512);
+            deserializeJson(doc, payload);
+
+            if (doc.containsKey("cascada")) {
+                String cascadaState = doc["cascada"].as<String>();
+                Serial.printf("💦 Estado de cascada recibido: %s\n", cascadaState.c_str());
+
+                // Cambiar el estado del relé solo si el nuevo estado es diferente al actual
+                if (cascadaState != cascadaStateCurrent) {
+                    cascadaStateCurrent = cascadaState; // Actualizar el estado actual
+
+                    if (cascadaState == "ON") {
+                        digitalWrite(RELAY_CASCADA, HIGH);
+                        Serial.println("💦 Cascada encendida");
+                    } else if (cascadaState == "OFF") {
+                        digitalWrite(RELAY_CASCADA, LOW);
+                        Serial.println("💦 Cascada apagada");
+                    }
+                } else {
+                    Serial.println("🔄 El estado de la cascada no ha cambiado, manteniendo el estado actual.");
+                }
+            } else {
+                Serial.println("⚠️ No se encontró la llave 'cascada' en la respuesta");
+            }
+        } else {
+            Serial.printf("❌ Error HTTP al obtener datos de cascada: %d\n", httpCode);
         }
         http.end();
     } else {
@@ -214,41 +256,20 @@ void controlLight() {
 }
 
 void controlHumedad() {
-    static unsigned long lastRainTime = 0;
-    const unsigned long rainInterval = 3600000; // 1 hora
+    static unsigned long lastSprinklerTime = 0; // Tiempo de la última activación
+    const unsigned long sprinklerInterval = 60000; // Intervalo de 1 minuto (60,000 ms)
+    const unsigned long sprinklerDuration = 5000; // Duración de 20 segundos (20,000 ms)
 
-    // Pre-reproducción (<70%) o reproducción (70-90%)
-    if (PromH < 70 && !rainSimulated) {
-        // Simular lluvia por 30 segundos
-        digitalWrite(RELAY_ESPERSOR, HIGH);
-        Serial.println("🌧️ Activando aspersores para simular lluvia");
-        delay(30000);
-        digitalWrite(RELAY_ESPERSOR, LOW);
-        rainSimulated = true;
-        lastRainTime = millis();
-    } 
-    // Si la humedad es adecuada, resetear flag de lluvia
-    else if (PromH >= 70 && PromH <= 90) {
-        rainSimulated = false;
-    }
-    // Si ha pasado 1 hora y aún necesitamos más humedad
-    else if (PromH < 90 && millis() - lastRainTime >= rainInterval) {
-        rainSimulated = false;
-    }
-}
+    unsigned long currentMillis = millis();
 
-void controlWaterfall() {
-    // Activar cascada 10 minutos cada hora para oxigenación
-    static unsigned long lastWaterfallOn = 0;
-    const unsigned long waterfallInterval = 3600000; // 1 hora
-    const unsigned long waterfallDuration = 600000;  // 10 minutos
-
-    if (millis() - lastWaterfallOn >= waterfallInterval) {
-        digitalWrite(RELAY_CASCADA, HIGH);
-        Serial.println("💦 Activando cascada para oxigenación");
-        delay(waterfallDuration);
-        digitalWrite(RELAY_CASCADA, LOW);
-        lastWaterfallOn = millis();
+    // Verificar si es momento de activar los aspersores
+    if (currentMillis - lastSprinklerTime >= sprinklerInterval) {
+        digitalWrite(RELAY_ASPERSOR, HIGH); // Encender aspersores
+        Serial.println("🌧️ Activando aspersores durante 5 segundos");
+        delay(sprinklerDuration); // Mantener los aspersores encendidos por 20 segundos
+        digitalWrite(RELAY_ASPERSOR, LOW); // Apagar aspersores
+        Serial.println("🌧️ Aspersores apagados");
+        lastSprinklerTime = currentMillis; // Actualizar el tiempo de la última activación
     }
 }
 
@@ -411,7 +432,7 @@ void applyFuzzyLogic() {
     
     // Controlar relés con las salidas difusas
     digitalWrite(RELAY_CALEFACTOR, heaterOutput > 70 ? HIGH : (heaterOutput < 30 ? LOW : LOW));
-    digitalWrite(RELAY_ESPERSOR, sprinklerOutput > 70 ? HIGH : (sprinklerOutput < 30 ? LOW : LOW));
+    digitalWrite(RELAY_ASPERSOR, sprinklerOutput > 70 ? HIGH : (sprinklerOutput < 30 ? LOW : LOW));
     digitalWrite(RELAY_PH, phControlOutput > 70 ? HIGH : (phControlOutput < 30 ? LOW : digitalRead(RELAY_PH)));
     
     Serial.printf("🔥 Calefacción: %.1f%%\n", heaterOutput);
