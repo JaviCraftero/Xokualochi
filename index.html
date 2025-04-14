@@ -23,6 +23,14 @@
         <link rel="icon" type="image/png" sizes="16x16"
             href="assets/img/favicon-16x16.png">
         <link rel="manifest" href="assets/img/site.webmanifest">
+
+        <script
+            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+        <script
+            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
+        <script
+            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js"></script>
+    
         <script type="module">
             // Import the functions from firebase
             import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -124,7 +132,7 @@
                 }
             }
 
-            function generateCSV(data) {
+            async function generateCSV(data) {
                 // Define los encabezados del archivo CSV
                 const headers = ["DS18", "Temp1", "Temp2", "Temp3", "Hum1", "Hum2", "Hum3", "PromT", "PromH", "pH", "timestamp"];
                 
@@ -191,6 +199,47 @@
             updateImage();
             setInterval(updateImage, 15000);
 
+            // Mover estas declaraciones después de que el DOM esté listo
+            document.addEventListener('DOMContentLoaded', () => {
+                const button = document.getElementById('toggleCascada');
+                
+                // Escuchar el estado actual desde Firebase
+                onValue(cascadaRef, (snapshot) => {
+                    cascadaState = snapshot.val() || "OFF";
+                    button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
+                });
+
+                // Manejar el clic en el botón
+                button.addEventListener('click', () => {
+                    // Alternar el estado
+                    const newState = cascadaState === "ON" ? "OFF" : "ON";
+
+                    // Actualizar el estado en Firebase
+                    set(cascadaRef, newState)
+                        .then(() => {
+                            console.log(`Estado de cascada cambiado a: ${newState}`);
+                        })
+                        .catch((error) => {
+                            console.error("Error al actualizar el estado de cascada:", error);
+                        });
+                });
+
+                // Agregar el código del botón CSV aquí
+                document.getElementById("downloadCSV").addEventListener("click", async () => {
+                    try {
+                        const csvContent = await generateCSV();
+                        const blob = new Blob([csvContent], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "historial_sensores.csv";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    } catch (error) {
+                        console.error("Error al generar CSV:", error);
+                    }
+                });
+            });
           </script>
           <style>
             .sensor-data {
