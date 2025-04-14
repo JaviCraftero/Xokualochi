@@ -70,20 +70,20 @@
             let lastSaveTime = 0; // Variable para almacenar el tiempo de la última actualización
             const SAVE_INTERVAL = 30*60*1000; // 30 minutos en milisegundos
 
-            <!-- // Manejar el clic en el botón
-            document.getElementById('toggleCascada').addEventListener('click', () => {
+            // Manejar el clic en el botón
+            //document.getElementById('toggleCascada').addEventListener('click', () => {
                 // Alternar el estado
-                const newState = cascadaState === "ON" ? "OFF" : "ON";
+              //  const newState = cascadaState === "ON" ? "OFF" : "ON";
 
                 // Actualizar el estado en Firebase
-                set(cascadaRef, newState)
-                    .then(() => {
-                        console.log(`Estado de cascada cambiado a: ${newState}`);
-                    })
-                    .catch((error) => {
-                        console.error("Error al actualizar el estado de cascada:", error);
-                    });
-            }); -->
+                //set(cascadaRef, newState)
+                  //  .then(() => {
+                    //    console.log(`Estado de cascada cambiado a: ${newState}`);
+                    //})
+                    //.catch((error) => {
+                     //   console.error("Error al actualizar el estado de cascada:", error);
+                    //});
+            //});
 
             // Obtener la referencia a la imagen SOLO UNA VEZ
             const imageRef = storageRef(storage, 'Incubadora_1/foto.jpg');
