@@ -32,7 +32,7 @@
         <script type="module">
             // Import the functions from firebase
             import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-            import { getDatabase, ref as dbRef, onValue, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"
+            import { getDatabase, ref as dbRef, onValue, set, push } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"
             import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
             const firebaseConfig = {
@@ -50,6 +50,8 @@
             const db = getDatabase(app);
             const storage = getStorage(app);
 
+            const historialRef = dbRef(db, 'historial');
+
             // Referencia al campo "cascada" en Firebase
             const cascadaRef = dbRef(db, 'CasStatus/cascada');
 
@@ -62,6 +64,8 @@
                 const button = document.getElementById('toggleCascada');
                 button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
             });
+            let lastSaveTime = 0; // Variable para almacenar el tiempo de la última actualización
+            const SAVE_INTERVAL = 30*60*1000; // 30 minutos en milisegundos
 
             // Manejar el clic en el botón
             document.getElementById('toggleCascada').addEventListener('click', () => {
@@ -96,6 +100,23 @@
                 document.getElementById('PromT').innerText = data.PromT;
                 document.getElementById('PromH').innerText = data.PromH;
                 document.getElementById('pH').innerText = data.pH;
+
+                const currentTime = Date.now();
+                if (currentTime - lastSaveTime >= SAVE_INTERVAL) {
+                    // Guardar en historial
+                    const registro = {
+                        ...data,
+                        timestamp: new Date().toISOString()
+                    };
+                    push(historialRef, registro)
+                        .then(() => {
+                            console.log('Datos guardados en historial');
+                            lastSaveTime = currentTime; // Actualizar el tiempo de la última guardada
+                        })
+                        .catch(error => {
+                            console.error('Error al guardar en historial:', error);
+                        });
+                }
             });
 
             async function updateImage() {
@@ -116,20 +137,26 @@
                 const rows = [headers.join(",")]; // Agrega los encabezados como la primera fila
 
                 // Agrega los datos como una fila
-                const row = [
-                    data.DS18 || 0,
-                    data.Temp1 || 0,
-                    data.Temp2 || 0,
-                    data.Temp3 || 0,
-                    data.Hum1 || 0,
-                    data.Hum2 || 0,
-                    data.Hum3 || 0,
-                    data.PromT || 0,
-                    data.PromH || 0,
-                    data.pH || 0,
-                    new Date().toISOString() // Agrega un timestamp actual
-                ];
-                rows.push(row.join(","));
+                const snapshot = await get(historialRef);
+                if (snapshot.exists()) {
+                    const historial = snapshot.val();
+                    Object.values(historial).forEach(reading => {
+                        const row = [
+                            reading.DS18 || 0,
+                            reading.Temp1 || 0,
+                            reading.Temp2 || 0,
+                            reading.Temp3 || 0,
+                            reading.Hum1 || 0,
+                            reading.Hum2 || 0,
+                            reading.Hum3 || 0,
+                            reading.PromT || 0,
+                            reading.PromH || 0,
+                            reading.pH || 0,
+                            reading.timestamp
+                        ];
+                        rows.push(row.join(","));
+                    });
+                }
 
                 // Convierte las filas a un string CSV
                 return rows.join("\n");
@@ -151,11 +178,19 @@
             }
 
             // Evento para el botón de descarga
-            document.getElementById("downloadCSV").addEventListener("click", () => {
-                onValue(dataRef, (snapshot) => {
-                    const data = snapshot.val();
-                    downloadCSV(data);
-                });
+            document.getElementById("downloadCSV").addEventListener("click", async () => {
+                try {
+                    const csvContent = await generateCSV();
+                    const blob = new Blob([csvContent], { type: "text/csv" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "historial_sensores.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error("Error al generar CSV:", error);
+                }
             });
 
             updateImage();
@@ -436,7 +471,7 @@
                                 <button id="toggleCascada" class="btn-cascada">Activar Cascada</button>
                             </div>
                             <div class="sensor-card">
-                                <button id="Descarga CSV" class="btn-cascada">Descargar CSV</button>
+                                <button id="downloadCSV" class="btn-cascada">Descargar CSV</button>
                             </div>
                         </div>
                         <div class="row">
