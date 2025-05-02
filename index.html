@@ -48,18 +48,37 @@
             };
 
             const app = initializeApp(firebaseConfig);
-
             const db = getDatabase(app);
-            
             const storage = getStorage(app);
-
             const historialRef = dbRef(db, 'historial');
-
-            // Referencia al campo "cascada" en Firebase
             const cascadaRef = dbRef(db, 'CasStatus/cascada');
-
-            // Variable para almacenar el estado actual
+            const dataRef1 = dbRef(db, 'Incu1');
+            const dataRef2 = dbRef(db, 'Incu2');
+            
+            // Referencias a las imágenes
+            const imageRef1 = storageRef(storage, 'Incubadora_1/foto.jpg');
+            const imageRef2 = storageRef(storage, 'Incubadora_2/foto.jpg');
+            
             let cascadaState = "OFF";
+            let lastSaveTime = 0;
+            const SAVE_INTERVAL = 30*60*1000;
+
+            // Función para actualizar ambas imágenes
+            async function updateImages() {
+                try {
+                    // Actualizar imagen de Incubadora 1
+                    const url1 = await getDownloadURL(imageRef1);
+                    const img1 = document.getElementById('Incubadora_1');
+                    img1.src = url1;
+
+                    // Actualizar imagen de Incubadora 2
+                    const url2 = await getDownloadURL(imageRef2);
+                    const img2 = document.getElementById('Incubadora_2');
+                    img2.src = url2;
+                } catch (error) {
+                    console.error('Error al actualizar imágenes:', error);
+                }
+            }
 
             // Escuchar el estado actual desde Firebase
             onValue(cascadaRef, (snapshot) => {
@@ -67,31 +86,9 @@
                 const button = document.getElementById('toggleCascada');
                 button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
             });
-            let lastSaveTime = 0; // Variable para almacenar el tiempo de la última actualización
-            const SAVE_INTERVAL = 30*60*1000; // 30 minutos en milisegundos
-
-            // Manejar el clic en el botón
-            //document.getElementById('toggleCascada').addEventListener('click', () => {
-                // Alternar el estado
-              //  const newState = cascadaState === "ON" ? "OFF" : "ON";
-
-                // Actualizar el estado en Firebase
-                //set(cascadaRef, newState)
-                  //  .then(() => {
-                    //    console.log(`Estado de cascada cambiado a: ${newState}`);
-                    //})
-                    //.catch((error) => {
-                     //   console.error("Error al actualizar el estado de cascada:", error);
-                    //});
-            //});
-
-            // Obtener la referencia a la imagen SOLO UNA VEZ
-            const imageRef = storageRef(storage, 'Incubadora_1/foto.jpg');
-
-            const dataRef = dbRef(db, 'Incu1'); // <--- ¡Corrección clave aquí!
 
             // Escucha cambios en la base de datos
-            onValue(dataRef, (snapshot) => {
+            onValue(dataRef1, (snapshot) => {
                 const data = snapshot.val();
                 document.getElementById('DS18').innerText = data.DS18;
                 document.getElementById('Temp1').innerText = data.Temp1;
@@ -122,15 +119,19 @@
                 }
             });
 
-            async function updateImage() {
-                try {
-                    const url = await getDownloadURL(imageRef);
-                    const img = document.getElementById('Incubadora_1');
-                    img.src = url;
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            }
+            // Listener para Incu2
+            onValue(dataRef2, (snapshot) => {
+                const data = snapshot.val();
+                document.getElementById('DS18_2').innerText = data.DS18;
+                document.getElementById('Temp1_2').innerText = data.Temp1;
+                document.getElementById('Temp2_2').innerText = data.Temp2;
+                document.getElementById('Temp3_2').innerText = data.Temp3;
+                document.getElementById('Hum1_2').innerText = data.Hum1;
+                document.getElementById('Hum2_2').innerText = data.Hum2;
+                document.getElementById('Hum3_2').innerText = data.Hum3;
+                document.getElementById('PromT_2').innerText = data.PromT;
+                document.getElementById('PromH_2').innerText = data.PromH;
+            });
 
             async function generateCSV(data) {
                 // Define los encabezados del archivo CSV
@@ -196,8 +197,8 @@
                 }
             });
 
-            updateImage();
-            setInterval(updateImage, 15000);
+            updateImages();
+            setInterval(updateImages, 15000);
 
             // Mover estas declaraciones después de que el DOM esté listo
             document.addEventListener('DOMContentLoaded', () => {
@@ -457,7 +458,7 @@
                                 <div class="card mb-4">
                                     <div class="card-header">
                                         <i class="fas fa-camera me-1"></i> Vista
-                                        de la Incubadora 1
+                                        de la Incubadora 1 "CONTROL"
                                     </div>
                                     <div class="card-body text-center">
                                         <img
@@ -468,8 +469,23 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Sección de Datos del Sensor -->
-                        <h1>Datos del Sensor</h1>
+
+                        <!-- Nueva sección para la imagen de la Incubadora 2 -->
+                        <div class="row mt-4">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-camera me-1"></i> Vista de la Incubadora 2
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <img src="" alt="Ultima foto tomada de la incubadora 2" id="Incubadora_2">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección de Datos del Sensor Incubadora 1 -->
+                        <h1>Datos Incubadora 1 (Control)</h1>
                         <div class="sensor-data">
                             <div class="sensor-card">
                                 <h3>DS18</h3>
@@ -516,6 +532,47 @@
                             </div>
                             <div class="sensor-card">
                                 <button id="downloadCSV" class="btn-cascada">Descargar CSV</button>
+                            </div>
+                        </div>
+
+                        <!-- Sección de Datos del Sensor Incubadora 2 -->
+                        <h1 class="mt-5">Datos Incubadora 2</h1>
+                        <div class="sensor-data">
+                            <div class="sensor-card">
+                                <h3>DS18</h3>
+                                <p id="DS18_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Temp1</h3>
+                                <p id="Temp1_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Temp2</h3>
+                                <p id="Temp2_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Temp3</h3>
+                                <p id="Temp3_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Hum1</h3>
+                                <p id="Hum1_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Hum2</h3>
+                                <p id="Hum2_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>Hum3</h3>
+                                <p id="Hum3_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>PromT</h3>
+                                <p id="PromT_2">0</p>
+                            </div>
+                            <div class="sensor-card">
+                                <h3>PromH</h3>
+                                <p id="PromH_2">0</p>
                             </div>
                         </div>
                         <div class="row">
