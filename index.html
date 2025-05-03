@@ -134,16 +134,18 @@
             });
 
             async function generateCSV(data) {
-                // Define los encabezados del archivo CSV
                 const headers = ["DS18", "Temp1", "Temp2", "Temp3", "Hum1", "Hum2", "Hum3", "PromT", "PromH", "pH", "timestamp"];
-                
-                // Crea un array para almacenar las filas del CSV
-                const rows = [headers.join(",")]; // Agrega los encabezados como la primera fila
+                const rows = [headers.join(",")];
 
-                // Agrega los datos como una fila
                 const snapshot = await get(historialRef);
                 if (snapshot.exists()) {
                     const historial = snapshot.val();
+                    
+                    // Arrays para almacenar los datos del gráfico
+                    const timestamps = [];
+                    const temperatures = [];
+                    const humidities = [];
+
                     Object.values(historial).forEach(reading => {
                         const row = [
                             reading.DS18 || 0,
@@ -159,10 +161,17 @@
                             reading.timestamp
                         ];
                         rows.push(row.join(","));
+
+                        // Agregar datos para el gráfico
+                        timestamps.push(new Date(reading.timestamp).toLocaleTimeString());
+                        temperatures.push(reading.PromT || 0);
+                        humidities.push(reading.PromH || 0);
                     });
+
+                    // Actualizar el gráfico con los nuevos datos
+                    updateAreaChart(timestamps, temperatures, humidities);
                 }
 
-                // Convierte las filas a un string CSV
                 return rows.join("\n");
             }
 
