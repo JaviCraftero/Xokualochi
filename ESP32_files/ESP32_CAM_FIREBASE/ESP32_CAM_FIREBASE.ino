@@ -74,6 +74,8 @@ const unsigned long sensorReadInterval = 30 * 1000; // 30 segundos
 
 #define LED_GPIO_NUM 4 // Flash
 
+#define NUM_INCUBADORA 1
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -222,7 +224,7 @@ void captureAndUploadToFirebase() {
   HTTPClient http;
   http.begin(function_url);
   http.addHeader("Content-Type", "application/json"); // Se envía como JSON
-  String payload = "{\"imageData\": \"" + imageData + "\"}";
+  String payload = "{\"imageData\": \"" + imageData + "\", \"incubadora\": " + String(NUM_INCUBADORA) + "}";
 
   int httpResponseCode = http.POST(payload);
 
