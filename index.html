@@ -23,14 +23,6 @@
         <link rel="icon" type="image/png" sizes="16x16"
             href="assets/img/favicon-16x16.png">
         <link rel="manifest" href="assets/img/site.webmanifest">
-
-        <script
-            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-        <script
-            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
-        <script
-            src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js"></script>
-    
         <script type="module">
             // Import the functions from firebase
             import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -785,62 +777,37 @@
                             </div>
                         </div>
 
-                        <!-- Agregamos un div para espaciado extra -->
-                        <div class="mb-5"></div>
-
-                        <div class="row">
+                        <!-- Cards de notificación -->
+                        <div class="row mb-4">
                             <div class="col-xl-3 col-md-6">
-                                <div class="card bg-primary text-white mb-4">
-                                    <div class="card-body">Primary Card</div>
-                                    <div
-                                        class="card-footer d-flex align-items-center justify-content-between">
-                                        <a
-                                            class="small text-white stretched-link"
-                                            href="#">View Details</a>
-                                        <div class="small text-white"><i
-                                                class="fas fa-angle-right"></i></div>
+                                <div id="tempCard" class="card bg-success text-white mb-4">
+                                    <div id="tempCardBody" class="card-body">Estado de Temperatura</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Rango ideal: 20-35°C</div>
+                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-3 col-md-6">
-                                <div class="card bg-warning text-white mb-4">
-                                    <div class="card-body">Warning Card</div>
-                                    <div
-                                        class="card-footer d-flex align-items-center justify-content-between">
-                                        <a
-                                            class="small text-white stretched-link"
-                                            href="#">View Details</a>
-                                        <div class="small text-white"><i
-                                                class="fas fa-angle-right"></i></div>
+                                <div id="phCard" class="card bg-success text-white mb-4">
+                                    <div id="phCardBody" class="card-body">Estado del pH</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Rango ideal: 6.2-7.8</div>
+                                        <div class="small text-white"><i class="fas fa-flask"></i></div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-3 col-md-6">
-                                <div class="card bg-success text-white mb-4">
-                                    <div class="card-body">Success Card</div>
-                                    <div
-                                        class="card-footer d-flex align-items-center justify-content-between">
-                                        <a
-                                            class="small text-white stretched-link"
-                                            href="#">View Details</a>
-                                        <div class="small text-white"><i
-                                                class="fas fa-angle-right"></i></div>
+                                <div id="humCard" class="card bg-success text-white mb-4">
+                                    <div id="humCardBody" class="card-body">Estado de Humedad</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Mínimo requerido: 70%</div>
+                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div class="card bg-danger text-white mb-4">
-                                    <div class="card-body">Danger Card</div>
-                                    <div
-                                        class="card-footer d-flex align-items-center justify-content-between">
-                                        <a
-                                            class="small text-white stretched-link"
-                                            href="#">View Details</a>
-                                        <div class="small text-white"><i
-                                                class="fas fa-angle-right"></i></div>
-                                    </div>
-                                </div>
-                            </div>                        </div>
+                        </div>
+                        
                         <!-- Espaciado entre tarjetas y gráfica -->
                         <div class="my-4"></div>
                         <div class="row">
@@ -879,14 +846,9 @@
             src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
             crossorigin="anonymous"></script>
         <script src="js/scripts.js"></script>
-        <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"
-            crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
         <script src="assets/demo/chart-area-demo.js"></script>
-        <script src="assets/demo/chart-bar-demo.js"></script>
-        <script
-            src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"
-            crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
         <script src="js/datatables-simple-demo.js"></script>
     </body>
 </html>
