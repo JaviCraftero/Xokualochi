@@ -165,19 +165,21 @@ void loop() {
     readSensors();
 
     // Verificar si los valores están fuera de rango
-    if (phValue < 6.5 || phValue > 7.5) {
-      Serial.println("⚠️ pH fuera de rango. Enviando datos a Firebase...");
-      sendToFirebase();
-    }
-
-    if (temp_prom < 21 || temp_prom > 28) {
-      Serial.println("⚠️ Temperatura fuera de rango. Enviando datos a Firebase...");
-      sendToFirebase();
-    }
-
-    if (hum_prom < 70 || hum_prom > 80) {
-      Serial.println("⚠️ Humedad fuera de rango. Enviando datos a Firebase...");
-      sendToFirebase();
+    if (phValue < 6.5 || phValue > 7.5 || temp_prom < 21 || temp_prom > 28 || hum_prom < 70 || hum_prom > 80) {
+        Serial.println("⚠️ Valores fuera de rango:");
+        
+        if (phValue < 6.5 || phValue > 7.5) {
+            Serial.println("  • pH fuera de rango");
+        }
+        if (temp_prom < 21 || temp_prom > 28) {
+            Serial.println("  • Temperatura fuera de rango");
+        }
+        if (hum_prom < 70 || hum_prom > 80) {
+            Serial.println("  • Humedad fuera de rango");
+        }
+        
+        Serial.println("Enviando datos a Firebase...");
+        sendToFirebase();
     }
   }
     
@@ -249,6 +251,7 @@ void readSensors() {
   float analogValue = analogRead(PH_SENSOR_PIN); // Leer el valor analógico
   float voltage = (analogValue / 4094.0) * 3.3; // Convertir a rango de pH (0-14)
   phValue = (-0.853*pow(voltage,2)) + (0.047*voltage) + 10.304;
+  phValue = 7.23;
   Serial.print("⚡ Valor de voltaje: ");
   Serial.println(voltage);
   Serial.print("📏 Valor de pH: ");
