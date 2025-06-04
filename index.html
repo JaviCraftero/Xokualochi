@@ -248,20 +248,74 @@
                 }
             }
 
-            // Función para mostrar notificación y reproducir sonido
-            function showNotification(title, message) {
-                // Reproducir sonido
-                const audio = document.getElementById('alertSound');
-                audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
+            // Variable para controlar si el audio está habilitado
+            let audioEnabled = false;
+            const audio = document.getElementById('alertSound');
 
-                // Mostrar notificación del navegador
-                if (Notification.permission === "granted") {
-                    new Notification(title, {
-                        body: message,
-                        icon: 'assets/img/favicon-96x96.png'
-                    });
-                }
+            // Función para habilitar el audio
+            function enableAudio() {
+                audioEnabled = true;
+                // Intentar reproducir y silenciar inmediatamente para "desbloquear" el audio
+                audio.volume = 0;
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 1;
+                }).catch(e => console.log('Error al inicializar audio:', e));
             }
+
+            // Función para mostrar notificación y reproducir sonido
+            function showNotification(title, message, type = 'danger') {
+                // Crear el elemento toast
+                const toastElement = document.createElement('div');
+                toastElement.className = `toast ${type}`;
+                toastElement.setAttribute('role', 'alert');
+                toastElement.setAttribute('aria-live', 'assertive');
+                toastElement.setAttribute('aria-atomic', 'true');
+                
+                // Crear el contenido del toast
+                toastElement.innerHTML = `
+                    <div class="toast-header">
+                        <strong class="me-auto">${title}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                `;
+
+                // Agregar el toast al contenedor
+                document.getElementById('toastContainer').appendChild(toastElement);
+
+                // Inicializar el toast con Bootstrap
+                const toast = new bootstrap.Toast(toastElement, {
+                    animation: true,
+                    autohide: true,
+                    delay: 5000
+                });
+                
+                // Mostrar el toast
+                toast.show();
+
+                // Reproducir sonido solo si está habilitado
+                if (audioEnabled) {
+                    audio.volume = 1;
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
+                }
+
+                // Eliminar el toast del DOM después de ocultarse
+                toastElement.addEventListener('hidden.bs.toast', () => {
+                    toastElement.remove();
+                });
+            }
+
+            // Manejar la interacción inicial del usuario
+            document.addEventListener('click', function initAudio() {
+                enableAudio();
+                // Remover el listener después de la primera interacción
+                document.removeEventListener('click', initAudio);
+            }, { once: true });
 
             // Función para validar si un valor es válido
             function isValidValue(value) {
@@ -287,12 +341,14 @@
                     tempCard.className = 'card bg-warning text-white mb-4';
                     tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
                     showNotification('Error de Sensor', 
-                        'Los datos de temperatura son inválidos o no están disponibles');
+                        'Los datos de temperatura son inválidos o no están disponibles',
+                        'warning');
                 } else if (temp < 20 || temp > 35) {
                     tempCard.className = 'card bg-danger text-white mb-4';
                     tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
                     showNotification('¡Alerta de Temperatura!', 
-                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`);
+                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
+                        'danger');
                 } else {
                     tempCard.className = 'card bg-success text-white mb-4';
                     tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
@@ -304,12 +360,14 @@
                     phCard.className = 'card bg-warning text-white mb-4';
                     phCardBody.textContent = '⚠️ Error: Datos de pH inválidos';
                     showNotification('Error de Sensor', 
-                        'Los datos de pH son inválidos o no están disponibles');
+                        'Los datos de pH son inválidos o no están disponibles',
+                        'warning');
                 } else if (ph < 6.2 || ph > 7.8) {
                     phCard.className = 'card bg-danger text-white mb-4';
                     phCardBody.textContent = `¡Alerta! pH ${ph} fuera de rango (6.2-7.8)`;
                     showNotification('¡Alerta de pH!', 
-                        `El pH está en ${ph} (Rango ideal: 6.2-7.8)`);
+                        `El pH está en ${ph} (Rango ideal: 6.2-7.8)`,
+                        'danger');
                 } else {
                     phCard.className = 'card bg-success text-white mb-4';
                     phCardBody.textContent = `pH OK: ${ph}`;
@@ -321,12 +379,14 @@
                     humCard.className = 'card bg-warning text-white mb-4';
                     humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
                     showNotification('Error de Sensor', 
-                        'Los datos de humedad son inválidos o no están disponibles');
+                        'Los datos de humedad son inválidos o no están disponibles',
+                        'warning');
                 } else if (hum < 70) {
                     humCard.className = 'card bg-danger text-white mb-4';
                     humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
                     showNotification('¡Alerta de Humedad!', 
-                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`);
+                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
+                        'danger');
                 } else {
                     humCard.className = 'card bg-success text-white mb-4';
                     humCardBody.textContent = `Humedad OK: ${hum}%`;
@@ -410,6 +470,63 @@
             .card.mb-4 {
                 height: 100%;
             }
+
+            /* Estilos para las notificaciones toast */
+            .toast-container {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1060;
+            }
+
+            .toast {
+                min-width: 300px;
+                margin-bottom: 10px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                animation: slideIn 0.3s ease-out;
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+
+            .toast.success {
+                border-left: 4px solid #198754;
+            }
+
+            .toast.danger {
+                border-left: 4px solid #dc3545;
+            }
+
+            .toast.warning {
+                border-left: 4px solid #ffc107;
+            }
+
+            .toast-header {
+                background-color: transparent;
+                border-bottom: 1px solid rgba(0,0,0,.1);
+            }
+
+            .toast-body {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+
+            .btn-close {
+                font-size: 12px;
+                opacity: 0.75;
+            }
+
+            .btn-close:hover {
+                opacity: 1;
+            }
         </style>
 
         <style>
@@ -438,6 +555,9 @@
         </audio>
     </head>
     <body class="sb-nav-fixed">
+        <!-- Contenedor para las notificaciones toast -->
+        <div class="toast-container" id="toastContainer"></div>
+        
         <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
             <!-- Navbar Brand-->
             <a class="navbar-brand ps-3" href="index.html">Monitoreo</a>
