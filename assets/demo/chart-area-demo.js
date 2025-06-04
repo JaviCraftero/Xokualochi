@@ -2,36 +2,17 @@
 Chart.defaults.global.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
 Chart.defaults.global.defaultFontColor = '#292b2c';
 
-let myLineChart;
+let myAreaChart;
 
-// Función para crear o actualizar el gráfico
-function updateAreaChart(timestamps, temperatures, humidities) {
-  const ctx = document.getElementById("myAreaChart");
-  
-  if (myLineChart) {
-    myLineChart.destroy();
-  }
-
-  myLineChart = new Chart(ctx, {
+// Area Chart Example
+window.onload = function() {
+  var ctx = document.getElementById("myAreaChart");
+  myAreaChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: timestamps,
+      labels: [],
       datasets: [{
-        label: "Temperatura Promedio",
-        lineTension: 0.3,
-        backgroundColor: "rgba(255,99,132,0.2)",
-        borderColor: "rgba(255,99,132,1)",
-        pointRadius: 5,
-        pointBackgroundColor: "rgba(255,99,132,1)",
-        pointBorderColor: "rgba(255,255,255,0.8)",
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: "rgba(255,99,132,1)",
-        pointHitRadius: 50,
-        pointBorderWidth: 2,
-        data: temperatures
-      },
-      {
-        label: "Humedad Promedio",
+        label: "Temperatura",
         lineTension: 0.3,
         backgroundColor: "rgba(2,117,216,0.2)",
         borderColor: "rgba(2,117,216,1)",
@@ -42,7 +23,21 @@ function updateAreaChart(timestamps, temperatures, humidities) {
         pointHoverBackgroundColor: "rgba(2,117,216,1)",
         pointHitRadius: 50,
         pointBorderWidth: 2,
-        data: humidities
+        data: []
+      },
+      {
+        label: "Humedad",
+        lineTension: 0.3,
+        backgroundColor: "rgba(220,53,69,0.2)",
+        borderColor: "rgba(220,53,69,1)",
+        pointRadius: 5,
+        pointBackgroundColor: "rgba(220,53,69,1)",
+        pointBorderColor: "rgba(255,255,255,0.8)",
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: "rgba(220,53,69,1)",
+        pointHitRadius: 50,
+        pointBorderWidth: 2,
+        data: []
       }]
     },
     options: {
@@ -67,11 +62,21 @@ function updateAreaChart(timestamps, temperatures, humidities) {
           gridLines: {
             color: "rgba(0, 0, 0, .125)",
           }
-        }]
+        }],
       },
       legend: {
         display: true
       }
     }
   });
+}
+
+// Función para actualizar el gráfico con nuevos datos
+function updateAreaChart(timestamps, temperatures, humidities) {
+  if (myAreaChart) {
+    myAreaChart.data.labels = timestamps;
+    myAreaChart.data.datasets[0].data = temperatures;
+    myAreaChart.data.datasets[1].data = humidities;
+    myAreaChart.update();
+  }
 }

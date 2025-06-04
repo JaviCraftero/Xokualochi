@@ -108,6 +108,9 @@
                 document.getElementById('PromH').innerText = data.PromH;
                 document.getElementById('pH').innerText = data.pH;
 
+                // Actualizar notificaciones
+                updateNotifications(data);
+
                 const currentTime = Date.now();
                 if (currentTime - lastSaveTime >= SAVE_INTERVAL) {
                     // Guardar en historial
@@ -241,6 +244,103 @@
                 }
             }
 
+            // Función para solicitar permiso de notificaciones
+            async function requestNotificationPermission() {
+                if (!("Notification" in window)) {
+                    console.log("Este navegador no soporta notificaciones");
+                    return;
+                }
+
+                if (Notification.permission !== "granted") {
+                    await Notification.requestPermission();
+                }
+            }
+
+            // Función para mostrar notificación y reproducir sonido
+            function showNotification(title, message) {
+                // Reproducir sonido
+                const audio = document.getElementById('alertSound');
+                audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
+
+                // Mostrar notificación del navegador
+                if (Notification.permission === "granted") {
+                    new Notification(title, {
+                        body: message,
+                        icon: 'assets/img/favicon-96x96.png'
+                    });
+                }
+            }
+
+            // Función para validar si un valor es válido
+            function isValidValue(value) {
+                return value !== null && 
+                       value !== undefined && 
+                       !isNaN(value) &&
+                       value !== 0 && // En el código del ESP32, 0 se usa como indicador de error para algunos sensores
+                       value !== -1;  // En el código del ESP32, -1 se usa como indicador de error para promedios
+            }
+
+            // Función para actualizar las notificaciones
+            function updateNotifications(data) {
+                const tempCard = document.getElementById('tempCard');
+                const phCard = document.getElementById('phCard'); 
+                const humCard = document.getElementById('humCard');
+                const tempCardBody = document.getElementById('tempCardBody');
+                const phCardBody = document.getElementById('phCardBody');
+                const humCardBody = document.getElementById('humCardBody');
+
+                // Verificar temperatura
+                const temp = parseFloat(data.PromT);
+                if (!isValidValue(temp)) {
+                    tempCard.className = 'card bg-warning text-white mb-4';
+                    tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
+                    showNotification('Error de Sensor', 
+                        'Los datos de temperatura son inválidos o no están disponibles');
+                } else if (temp < 20 || temp > 35) {
+                    tempCard.className = 'card bg-danger text-white mb-4';
+                    tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
+                    showNotification('¡Alerta de Temperatura!', 
+                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`);
+                } else {
+                    tempCard.className = 'card bg-success text-white mb-4';
+                    tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
+                }
+
+                // Verificar pH
+                const ph = parseFloat(data.pH);
+                if (!isValidValue(ph)) {
+                    phCard.className = 'card bg-warning text-white mb-4';
+                    phCardBody.textContent = '⚠️ Error: Datos de pH inválidos';
+                    showNotification('Error de Sensor', 
+                        'Los datos de pH son inválidos o no están disponibles');
+                } else if (ph < 6.2 || ph > 7.8) {
+                    phCard.className = 'card bg-danger text-white mb-4';
+                    phCardBody.textContent = `¡Alerta! pH ${ph} fuera de rango (6.2-7.8)`;
+                    showNotification('¡Alerta de pH!', 
+                        `El pH está en ${ph} (Rango ideal: 6.2-7.8)`);
+                } else {
+                    phCard.className = 'card bg-success text-white mb-4';
+                    phCardBody.textContent = `pH OK: ${ph}`;
+                }
+
+                // Verificar humedad
+                const hum = parseFloat(data.PromH);
+                if (!isValidValue(hum)) {
+                    humCard.className = 'card bg-warning text-white mb-4';
+                    humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
+                    showNotification('Error de Sensor', 
+                        'Los datos de humedad son inválidos o no están disponibles');
+                } else if (hum < 70) {
+                    humCard.className = 'card bg-danger text-white mb-4';
+                    humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
+                    showNotification('¡Alerta de Humedad!', 
+                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`);
+                } else {
+                    humCard.className = 'card bg-success text-white mb-4';
+                    humCardBody.textContent = `Humedad OK: ${hum}%`;
+                }
+            }
+
             updateImages();
             setInterval(updateImages, 15000);
 
@@ -340,6 +440,10 @@
                 background-color: #003f7f;
             }
         </style>
+        <!-- Agregar el elemento de audio para la alerta -->
+        <audio id="alertSound">
+            <source src="assets/sounds/alert.mp3" type="audio/mp3">
+        </audio>
     </head>
     <body class="sb-nav-fixed">
         <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
