@@ -15,11 +15,12 @@
 const char* ssid = "Bandle";
 const char* password = "YordlepeLudito1120";
 
+#define NUM_INCUBADORA 1
 
 
 // Firebase config
 const char* function_url = "https://us-central1-ranitas-test.cloudfunctions.net/uploadImage"; // URL de Cloud Function
-const char* firebaseURL = "https://ranitas-test-default-rtdb.firebaseio.com/Incu1.json";
+const char* firebaseURL = "https://ranitas-test-default-rtdb.firebaseio.com/Incu" + String(NUM_INCUBADORA) + ".json";
 
 // Sensores de temperatura
 // DHT22
@@ -73,6 +74,8 @@ const unsigned long sensorReadInterval = 30 * 1000; // 30 segundos
 #define PCLK_GPIO_NUM 22
 
 #define LED_GPIO_NUM 4 // Flash
+
+
 
 void setup() {
   Serial.begin(115200);
@@ -224,7 +227,7 @@ void captureAndUploadToFirebase() {
   HTTPClient http;
   http.begin(function_url);
   http.addHeader("Content-Type", "application/json"); // Se envía como JSON
-  String payload = "{\"imageData\": \"" + imageData + "\"}";
+  String payload = "{\"imageData\": \"" + imageData + "\", \"incubadora\": " + String(NUM_INCUBADORA) + "}";
 
   int httpResponseCode = http.POST(payload);
 
@@ -364,7 +367,7 @@ void sendToFirebase() {
 
   // **Payload 1: Sobrescribir datos en un nodo fijo**
   HTTPClient http;
-  http.begin("https://ranitas-test-default-rtdb.firebaseio.com/Incu1.json"); // Nodo fijo
+  http.begin("https://ranitas-test-default-rtdb.firebaseio.com/Incu" + String(NUM_INCUBADORA) + ".json"); // Nodo fijo
   http.addHeader("Content-Type", "application/json");
   int httpCode = http.PUT(payload);
 
@@ -383,7 +386,7 @@ void sendToFirebase() {
 
   // **Payload 2: Guardar datos con un timestamp único**
   char firebasePath[128];
-  snprintf(firebasePath, sizeof(firebasePath), "/Incu1/%s.json", timestamp); // Usar el timestamp corregido
+  snprintf(firebasePath, sizeof(firebasePath), "/Incu%d/%s.json", NUM_INCUBADORA, timestamp); // Usar el timestamp corregido
   String firebaseTimestampURL = "https://ranitas-test-default-rtdb.firebaseio.com" + String(firebasePath);
 
   http.begin(firebaseTimestampURL);
