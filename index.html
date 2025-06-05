@@ -393,6 +393,98 @@
                 }
             }
 
+            // Función para actualizar las notificaciones de la Incubadora 2
+            function updateNotificationsIncu2(data) {
+                const tempCard = document.getElementById('tempCard2');
+                const humCard = document.getElementById('humCard2');
+                const tempCardBody = document.getElementById('tempCardBody2');
+                const humCardBody = document.getElementById('humCardBody2');
+
+                // Verificar temperatura
+                const temp = parseFloat(data.PromT);
+                if (!isValidValue(temp)) {
+                    tempCard.className = 'card bg-warning text-white mb-4';
+                    tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
+                    showNotification('Error de Sensor - Incubadora 2', 
+                        'Los datos de temperatura son inválidos o no están disponibles',
+                        'warning');
+                } else if (temp < 20 || temp > 35) {
+                    tempCard.className = 'card bg-danger text-white mb-4';
+                    tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
+                    showNotification('¡Alerta de Temperatura! - Incubadora 2', 
+                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
+                        'danger');
+                } else {
+                    tempCard.className = 'card bg-success text-white mb-4';
+                    tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
+                }
+
+                // Verificar humedad
+                const hum = parseFloat(data.PromH);
+                if (!isValidValue(hum)) {
+                    humCard.className = 'card bg-warning text-white mb-4';
+                    humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
+                    showNotification('Error de Sensor - Incubadora 2', 
+                        'Los datos de humedad son inválidos o no están disponibles',
+                        'warning');
+                } else if (hum < 70) {
+                    humCard.className = 'card bg-danger text-white mb-4';
+                    humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
+                    showNotification('¡Alerta de Humedad! - Incubadora 2', 
+                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
+                        'danger');
+                } else {
+                    humCard.className = 'card bg-success text-white mb-4';
+                    humCardBody.textContent = `Humedad OK: ${hum}%`;
+                }
+            }
+
+            // Función para actualizar las notificaciones de la Incubadora 3
+            function updateNotificationsIncu3(data) {
+                const tempCard = document.getElementById('tempCard3');
+                const humCard = document.getElementById('humCard3');
+                const tempCardBody = document.getElementById('tempCardBody3');
+                const humCardBody = document.getElementById('humCardBody3');
+
+                // Verificar temperatura
+                const temp = parseFloat(data.PromT);
+                if (!isValidValue(temp)) {
+                    tempCard.className = 'card bg-warning text-white mb-4';
+                    tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
+                    showNotification('Error de Sensor - Incubadora 3', 
+                        'Los datos de temperatura son inválidos o no están disponibles',
+                        'warning');
+                } else if (temp < 20 || temp > 35) {
+                    tempCard.className = 'card bg-danger text-white mb-4';
+                    tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
+                    showNotification('¡Alerta de Temperatura! - Incubadora 3', 
+                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
+                        'danger');
+                } else {
+                    tempCard.className = 'card bg-success text-white mb-4';
+                    tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
+                }
+
+                // Verificar humedad
+                const hum = parseFloat(data.PromH);
+                if (!isValidValue(hum)) {
+                    humCard.className = 'card bg-warning text-white mb-4';
+                    humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
+                    showNotification('Error de Sensor - Incubadora 3', 
+                        'Los datos de humedad son inválidos o no están disponibles',
+                        'warning');
+                } else if (hum < 70) {
+                    humCard.className = 'card bg-danger text-white mb-4';
+                    humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
+                    showNotification('¡Alerta de Humedad! - Incubadora 3', 
+                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
+                        'danger');
+                } else {
+                    humCard.className = 'card bg-success text-white mb-4';
+                    humCardBody.textContent = `Humedad OK: ${hum}%`;
+                }
+            }
+
             updateImages();
             setInterval(updateImages, 15000);
 
@@ -914,6 +1006,8 @@
                         </div>
 
                         <!-- Cards de notificación -->
+                        <!-- Cards de notificación Incubadora 1 (Control) -->
+                        <h2 class="mt-4">Estado Incubadora 1 (Control)</h2>
                         <div class="row mb-4">
                             <div class="col-xl-3 col-md-6">
                                 <div id="tempCard" class="card bg-success text-white mb-4">
@@ -936,6 +1030,52 @@
                             <div class="col-xl-3 col-md-6">
                                 <div id="humCard" class="card bg-success text-white mb-4">
                                     <div id="humCardBody" class="card-body">Estado de Humedad</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Mínimo requerido: 70%</div>
+                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cards de notificación Incubadora 2 -->
+                        <h2 class="mt-4">Estado Incubadora 2</h2>
+                        <div class="row mb-4">
+                            <div class="col-xl-3 col-md-6">
+                                <div id="tempCard2" class="card bg-success text-white mb-4">
+                                    <div id="tempCardBody2" class="card-body">Estado de Temperatura</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Rango ideal: 20-35°C</div>
+                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div id="humCard2" class="card bg-success text-white mb-4">
+                                    <div id="humCardBody2" class="card-body">Estado de Humedad</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Mínimo requerido: 70%</div>
+                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cards de notificación Incubadora 3 -->
+                        <h2 class="mt-4">Estado Incubadora 3</h2>
+                        <div class="row mb-4">
+                            <div class="col-xl-3 col-md-6">
+                                <div id="tempCard3" class="card bg-success text-white mb-4">
+                                    <div id="tempCardBody3" class="card-body">Estado de Temperatura</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Rango ideal: 20-35°C</div>
+                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div id="humCard3" class="card bg-success text-white mb-4">
+                                    <div id="humCardBody3" class="card-body">Estado de Humedad</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
                                         <div class="small text-white">Mínimo requerido: 70%</div>
                                         <div class="small text-white"><i class="fas fa-tint"></i></div>
