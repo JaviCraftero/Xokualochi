@@ -397,7 +397,23 @@
             setInterval(updateImages, 15000);
 
             // Mover estas declaraciones después de que el DOM esté listo
-            document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener('DOMContentLoaded', async () => {
+                // Solicitar permisos de notificación al cargar la página
+                await requestNotificationPermission();
+                
+                // Inicializar el audio
+                const audio = document.getElementById('alertSound');
+                if (audio) {
+                    // Intentar reproducir y silenciar inmediatamente para "desbloquear" el audio
+                    audio.volume = 0;
+                    audio.play().then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        audio.volume = 1;
+                        enableAudio(); // Habilitar el audio para futuras notificaciones
+                    }).catch(e => console.log('Error al inicializar audio:', e));
+                }
+
                 const button = document.getElementById('toggleCascada');
                 
                 // Escuchar el estado actual desde Firebase
