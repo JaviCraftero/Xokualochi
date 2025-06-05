@@ -303,11 +303,13 @@
                 // Mostrar el toast
                 toast.show();
 
-                // Reproducir sonido solo si está habilitado
-                if (audioEnabled) {
-                    audio.volume = 1;
-                    audio.currentTime = 0;
-                    audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
+                // Reproducir sonido solo si está habilitado y el tipo es 'danger' o 'warning'
+                if (audioEnabled && (type === 'danger' || type === 'warning')) {
+                    const audio = document.getElementById('alertSound');
+                    if (audio) {
+                        audio.currentTime = 0; // Reiniciar el audio si ya estaba reproduciéndose
+                        audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
+                    }
                 }
 
                 // Eliminar el toast del DOM después de ocultarse
