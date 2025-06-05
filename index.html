@@ -135,6 +135,9 @@
                 document.getElementById('Hum3_2').innerText = data.Hum3;
                 document.getElementById('PromT_2').innerText = data.PromT;
                 document.getElementById('PromH_2').innerText = data.PromH;
+                
+                // Actualizar notificaciones de la incubadora 2
+                updateNotificationsIncu2(data);
             });
 
             // Escuchar cambios en la base de datos para Incubadora 3
@@ -149,6 +152,9 @@
                 document.getElementById('Hum3_3').innerText = data.Hum3;
                 document.getElementById('PromT_3').innerText = data.PromT;
                 document.getElementById('PromH_3').innerText = data.PromH;
+                
+                // Actualizar notificaciones de la incubadora 3
+                updateNotificationsIncu3(data);
             });
 
             async function generateCSV(data) {
