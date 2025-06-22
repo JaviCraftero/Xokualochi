@@ -518,6 +518,35 @@
                 }
             }
 
+            // Función para obtener y graficar historial de una incubadora (solo últimas 24 horas)
+            async function updateIncubatorChart24h(historialPath, updateChartFn) {
+                const db = getDatabase();
+                const ref = dbRef(db, historialPath);
+                try {
+                    const snapshot = await get(ref);
+                    if (snapshot.exists()) {
+                        const historial = snapshot.val();
+                        const timestamps = [];
+                        const temperatures = [];
+                        const humidities = [];
+                        const now = new Date();
+                        Object.values(historial).forEach(reading => {
+                            if (reading.timestamp) {
+                                const readingDate = new Date(reading.timestamp);
+                                if (!isNaN(readingDate) && (now - readingDate) <= 24 * 60 * 60 * 1000) {
+                                    timestamps.push(readingDate.toLocaleTimeString());
+                                    temperatures.push(reading.PromT || 0);
+                                    humidities.push(reading.PromH || 0);
+                                }
+                            }
+                        });
+                        updateChartFn(timestamps, temperatures, humidities);
+                    }
+                } catch (error) {
+                    console.error('Error al actualizar gráfica:', error);
+                }
+            }
+
             // Función para obtener y graficar historial de pH (solo últimas 24 horas)
             async function updatePhChartAll() {
                 const db = getDatabase();
@@ -549,16 +578,17 @@
 
             // Función para actualizar todas las gráficas
             function updateAllCharts() {
-                updateIncubatorChart('Incu1', updateAreaChart, 'PromT', 'PromH');
-                updateIncubatorChart('Incu2', updateAreaChart2, 'PromT', 'PromH');
-                updateIncubatorChart('Incu3', updateAreaChart3, 'PromT', 'PromH');
+                // Incubadora 1: historial global, ya funciona
+                updateAreaChartWithLatestData();
+                // Incubadora 2 y 3: solo últimas 24 horas
+                updateIncubatorChart24h('Incu2', updateAreaChart2);
+                updateIncubatorChart24h('Incu3', updateAreaChart3);
                 updatePhChartAll();
             }
 
             // Actualizar al cargar la página
             updateAllCharts();
             // Actualizar cada 30 minutos (1800000 ms)
-            setInterval(updateAllCharts, 1800000);
 
             updateImages();
             setInterval(updateImages, 15000);
