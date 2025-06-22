@@ -495,17 +495,6 @@
 
             // --- FUNCIONES PARA ACTUALIZAR GRÁFICAS DE INCUBADORAS Y PH ---
 
-            // Función para convertir timestamp tipo '2025-06-22_14-54-14' a objeto Date
-            function parseCustomTimestamp(ts) {
-                // Reemplaza '_' por ' ' y '-' por ':' solo en la parte de la hora
-                // '2025-06-22_14-54-14' => '2025-06-22 14:54:14'
-                if (!ts) return null;
-                const [date, time] = ts.split('_');
-                if (!date || !time) return null;
-                const timeFixed = time.replace(/-/g, ':');
-                return new Date(`${date}T${timeFixed}`);
-            }
-
             // Función para obtener y graficar historial de una incubadora
             async function updateIncubatorChart(historialPath, updateChartFn, tempKey = 'PromT', humKey = 'PromH') {
                 const db = getDatabase();
@@ -543,10 +532,9 @@
                         const now = new Date();
                         Object.values(historial).forEach(reading => {
                             if (reading.timestamp) {
-                                const readingDate = parseCustomTimestamp(reading.timestamp);
-                                if (readingDate && !isNaN(readingDate) && (now - readingDate) <= 24 * 60 * 60 * 1000) {
-                                    // Mostrar solo hora:minutos
-                                    timestamps.push(readingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                                const readingDate = new Date(reading.timestamp);
+                                if (!isNaN(readingDate) && (now - readingDate) <= 24 * 60 * 60 * 1000) {
+                                    timestamps.push(readingDate.toLocaleTimeString());
                                     temperatures.push(reading.PromT || 0);
                                     humidities.push(reading.PromH || 0);
                                 }
@@ -562,6 +550,7 @@
             // Función para obtener y graficar historial de pH (solo últimas 24 horas)
             async function updatePhChartAll() {
                 const db = getDatabase();
+                // Puedes cambiar esto si tienes historial de pH por incubadora
                 const ref = dbRef(db, 'historial');
                 try {
                     const snapshot = await get(ref);
@@ -572,9 +561,10 @@
                         const now = new Date();
                         Object.values(historial).forEach(reading => {
                             if (reading.timestamp) {
-                                const readingDate = parseCustomTimestamp(reading.timestamp);
-                                if (readingDate && !isNaN(readingDate) && (now - readingDate) <= 24 * 60 * 60 * 1000) {
-                                    timestamps.push(readingDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                                const readingDate = new Date(reading.timestamp);
+                                // Solo incluir si es de las últimas 24 horas
+                                if ((now - readingDate) <= 24 * 60 * 60 * 1000) {
+                                    timestamps.push(readingDate.toLocaleTimeString());
                                     phValues.push(reading.pH || 0);
                                 }
                             }
@@ -588,7 +578,9 @@
 
             // Función para actualizar todas las gráficas
             function updateAllCharts() {
-                updateIncubatorChart24h('Incu1', updateAreaChart);
+                // Incubadora 1: historial global, ya funciona
+                updateAreaChartWithLatestData();
+                // Incubadora 2 y 3: solo últimas 24 horas
                 updateIncubatorChart24h('Incu2', updateAreaChart2);
                 updateIncubatorChart24h('Incu3', updateAreaChart3);
                 updatePhChartAll();
@@ -597,7 +589,6 @@
             // Actualizar al cargar la página
             updateAllCharts();
             // Actualizar cada 30 minutos (1800000 ms)
-            setInterval(updateAllCharts, 1800000);
 
             updateImages();
             setInterval(updateImages, 15000);
@@ -1222,7 +1213,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row justify-content-center mb-4" style="gap: 24px;">
+                        <!-- <div class="row justify-content-center mb-4" style="gap: 24px;">
                             <div class="col-xl-4 col-md-12 mb-4">
                                 <div class="card mb-4 p-2">
                                     <div class="card-header">
@@ -1250,7 +1241,7 @@
                                     <div class="card-body"><canvas id="myAreaChart3" width="100%" height="40"></canvas></div>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                         <div class="row">
                             <div class="col-xl-12">
                                 <div class="card mb-4">
