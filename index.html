@@ -518,7 +518,7 @@
                 }
             }
 
-            // Función para obtener y graficar historial de pH (de todas las incubadoras)
+            // Función para obtener y graficar historial de pH (solo últimas 24 horas)
             async function updatePhChartAll() {
                 const db = getDatabase();
                 // Puedes cambiar esto si tienes historial de pH por incubadora
@@ -529,9 +529,16 @@
                         const historial = snapshot.val();
                         const timestamps = [];
                         const phValues = [];
+                        const now = new Date();
                         Object.values(historial).forEach(reading => {
-                            timestamps.push(new Date(reading.timestamp).toLocaleTimeString());
-                            phValues.push(reading.pH || 0);
+                            if (reading.timestamp) {
+                                const readingDate = new Date(reading.timestamp);
+                                // Solo incluir si es de las últimas 24 horas
+                                if ((now - readingDate) <= 24 * 60 * 60 * 1000) {
+                                    timestamps.push(readingDate.toLocaleTimeString());
+                                    phValues.push(reading.pH || 0);
+                                }
+                            }
                         });
                         updatePhChart(timestamps, phValues);
                     }
@@ -542,9 +549,9 @@
 
             // Función para actualizar todas las gráficas
             function updateAllCharts() {
-                updateIncubatorChart('historial/Incu1', updateAreaChart);
-                updateIncubatorChart('historial/Incu2', updateAreaChart2);
-                updateIncubatorChart('historial/Incu3', updateAreaChart3);
+                updateIncubatorChart('Incu1', updateAreaChart, 'PromT', 'PromH');
+                updateIncubatorChart('Incu2', updateAreaChart2, 'PromT', 'PromH');
+                updateIncubatorChart('Incu3', updateAreaChart3, 'PromT', 'PromH');
                 updatePhChartAll();
             }
 
@@ -1176,9 +1183,18 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-xl-6">
-                                <div class="card mb-4">
+                        <div class="row justify-content-center mb-4" style="gap: 24px;">
+                            <div class="col-xl-4 col-md-12 mb-4">
+                                <div class="card mb-4 p-2">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-area me-1"></i>
+                                        Historial de Temperatura y Humedad Incubadora 1
+                                    </div>
+                                    <div class="card-body"><canvas id="myAreaChart" width="100%" height="40"></canvas></div>
+                                </div>
+                            </div>
+                            <div class="col-xl-4 col-md-12 mb-4">
+                                <div class="card mb-4 p-2">
                                     <div class="card-header">
                                         <i class="fas fa-chart-area me-1"></i>
                                         Historial de Temperatura y Humedad Incubadora 2
@@ -1186,8 +1202,8 @@
                                     <div class="card-body"><canvas id="myAreaChart2" width="100%" height="40"></canvas></div>
                                 </div>
                             </div>
-                            <div class="col-xl-6">
-                                <div class="card mb-4">
+                            <div class="col-xl-4 col-md-12 mb-4">
+                                <div class="card mb-4 p-2">
                                     <div class="card-header">
                                         <i class="fas fa-chart-area me-1"></i>
                                         Historial de Temperatura y Humedad Incubadora 3
