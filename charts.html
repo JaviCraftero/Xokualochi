@@ -121,33 +121,114 @@
                                 .
                             </div>
                         </div>
+                        <!-- Filtros de incubadora y rango de tiempo -->
                         <div class="card mb-4">
                             <div class="card-header">
-                                <i class="fas fa-chart-area me-1"></i>
-                                Area Chart Example
+                                <i class="fas fa-filter me-1"></i>
+                                Filtros de monitoreo
                             </div>
-                            <div class="card-body"><canvas id="myAreaChart" width="100%" height="30"></canvas></div>
-                            <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-bar me-1"></i>
-                                        Bar Chart Example
+                            <div class="card-body">
+                                <form class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="incubatorSelect" class="form-label">Incubadora</label>
+                                        <select id="incubatorSelect" class="form-select">
+                                            <option value="1">Incubadora 1</option>
+                                            <option value="2">Incubadora 2</option>
+                                            <option value="3">Incubadora 3</option>
+                                        </select>
                                     </div>
-                                    <div class="card-body"><canvas id="myBarChart" width="100%" height="50"></canvas></div>
-                                    <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
+                                    <div class="col-md-3">
+                                        <label for="startTime" class="form-label">Desde</label>
+                                        <input type="datetime-local" id="startTime" class="form-control" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="endTime" class="form-label">Hasta</label>
+                                        <input type="datetime-local" id="endTime" class="form-control" />
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button type="button" id="applyFilter" class="btn btn-primary w-100">Aplicar filtro</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Tarjetas informativas -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card text-white bg-info mb-3">
+                                    <div class="card-header">Incubadora 1</div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">Temperatura: <span id="tempCard1">--</span></h5>
+                                        <h5 class="card-title">Humedad: <span id="humCard1">--</span></h5>
+                                        <h5 class="card-title">pH: <span id="phCard1">--</span></h5>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-lg-6">
+                            <div class="col-md-4">
+                                <div class="card text-white bg-info mb-3">
+                                    <div class="card-header">Incubadora 2</div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">Temperatura: <span id="tempCard2">--</span></h5>
+                                        <h5 class="card-title">Humedad: <span id="humCard2">--</span></h5>
+                                        <h5 class="card-title">pH: <span id="phCard2">--</span></h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-white bg-success mb-3">
+                                    <div class="card-header">Incubadora 3</div>
+                                    <div class="card-body">
+                                        <h5 class="card-title">Temperatura: <span id="tempCard3">--</span></h5>
+                                        <h5 class="card-title">Humedad: <span id="humCard3">--</span></h5>
+                                        <h5 class="card-title">pH: <span id="phCard3">--</span></h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gráficas de monitoreo -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
                                 <div class="card mb-4">
                                     <div class="card-header">
-                                        <i class="fas fa-chart-pie me-1"></i>
-                                        Pie Chart Example
+                                        <i class="fas fa-chart-area me-1"></i>
+                                        Temperatura y Humedad - Incubadora 1
                                     </div>
-                                    <div class="card-body"><canvas id="myPieChart" width="100%" height="50"></canvas></div>
-                                    <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
+                                    <div class="card-body"><canvas id="myAreaChart" width="100%" height="30"></canvas></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-area me-1"></i>
+                                        Temperatura y Humedad - Incubadora 2
+                                    </div>
+                                    <div class="card-body"><canvas id="myAreaChart2" width="100%" height="30"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-area me-1"></i>
+                                        Temperatura y Humedad - Incubadora 3
+                                    </div>
+                                    <div class="card-body"><canvas id="myAreaChart3" width="100%" height="30"></canvas></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-vial me-1"></i>
+                                        pH - Incubadora 1 y 2
+                                    </div>
+                                    <div class="card-body"><canvas id="myPhChart" width="100%" height="30"></canvas></div>
+                                </div>
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-vial me-1"></i>
+                                        pH - Incubadora 3
+                                    </div>
+                                    <div class="card-body"><canvas id="myPhChart3" width="100%" height="30"></canvas></div>
                                 </div>
                             </div>
                         </div>
