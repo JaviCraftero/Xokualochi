@@ -1117,64 +1117,11 @@
                                 <h3>PromH</h3>
                                 <p id="PromH_3">0</p>
                             </div>
-                        </div>
-
-                        <!-- Cards de notificación -->
-                        <!-- Cards de notificación Incubadora 1 (Control) -->
-                        <h2 class="mt-4">Estado Incubadora 1 (Control)</h2>
-                        <div class="row mb-4">
-                            <div class="col-xl-3 col-md-6">
-                                <div id="tempCard" class="card bg-success text-white mb-4">
-                                    <div id="tempCardBody" class="card-body">Estado de Temperatura</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 20-35°C</div>
-                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="phCard" class="card bg-success text-white mb-4">
-                                    <div id="phCardBody" class="card-body">Estado del pH</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 6.2-7.8</div>
-                                        <div class="small text-white"><i class="fas fa-flask"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="humCard" class="card bg-success text-white mb-4">
-                                    <div id="humCardBody" class="card-body">Estado de Humedad</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Mínimo requerido: 70%</div>
-                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
-                                    </div>
-                                </div>
+                            <div class="sensor-card">
+                                <h3>pH</h3>
+                                <p id="pH_3">0</p>
                             </div>
                         </div>
-
-                        <!-- Cards de notificación Incubadora 2 -->
-                        <h2 class="mt-4">Estado Incubadora 2</h2>
-                        <div class="row mb-4">
-                            <div class="col-xl-3 col-md-6">
-                                <div id="tempCard2" class="card bg-success text-white mb-4">
-                                    <div id="tempCardBody2" class="card-body">Estado de Temperatura</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 20-35°C</div>
-                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="humCard2" class="card bg-success text-white mb-4">
-                                    <div id="humCardBody2" class="card-body">Estado de Humedad</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Mínimo requerido: 70%</div>
-                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Cards de notificación Incubadora 3 -->
                         <h2 class="mt-4">Estado Incubadora 3</h2>
                         <div class="row mb-4">
@@ -1196,26 +1143,20 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Espaciado entre tarjetas y gráfica -->
-                        <div class="my-4"></div>
-                        <div class="row">
-                            <div class="col-xl-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-area me-1"></i>
-                                        Historial de Temperatura y Humedad
+                            <div class="col-xl-3 col-md-6">
+                                <div id="phCard3" class="card bg-success text-white mb-4">
+                                    <div id="phCardBody3" class="card-body">Estado del pH</div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between">
+                                        <div class="small text-white">Rango ideal: 6.2-7.8</div>
+                                        <div class="small text-white"><i class="fas fa-flask"></i></div>
                                     </div>
-                                    <div class="card-body"><canvas
-                                            id="myAreaChart" width="100%"
-                                            height="40"></canvas></div>
                                 </div>
                             </div>
                         </div>
-                        <!-- <div class="row justify-content-center mb-4" style="gap: 24px;">
-                            <div class="col-xl-4 col-md-12 mb-4">
-                                <div class="card mb-4 p-2">
+                        <!-- Gráficas de temperatura y humedad para cada incubadora -->
+                        <div class="row">
+                            <div class="col-xl-4">
+                                <div class="card mb-4">
                                     <div class="card-header">
                                         <i class="fas fa-chart-area me-1"></i>
                                         Historial de Temperatura y Humedad Incubadora 1
@@ -1223,8 +1164,8 @@
                                     <div class="card-body"><canvas id="myAreaChart" width="100%" height="40"></canvas></div>
                                 </div>
                             </div>
-                            <div class="col-xl-4 col-md-12 mb-4">
-                                <div class="card mb-4 p-2">
+                            <div class="col-xl-4">
+                                <div class="card mb-4">
                                     <div class="card-header">
                                         <i class="fas fa-chart-area me-1"></i>
                                         Historial de Temperatura y Humedad Incubadora 2
@@ -1232,8 +1173,8 @@
                                     <div class="card-body"><canvas id="myAreaChart2" width="100%" height="40"></canvas></div>
                                 </div>
                             </div>
-                            <div class="col-xl-4 col-md-12 mb-4">
-                                <div class="card mb-4 p-2">
+                            <div class="col-xl-4">
+                                <div class="card mb-4">
                                     <div class="card-header">
                                         <i class="fas fa-chart-area me-1"></i>
                                         Historial de Temperatura y Humedad Incubadora 3
@@ -1241,21 +1182,29 @@
                                     <div class="card-body"><canvas id="myAreaChart3" width="100%" height="40"></canvas></div>
                                 </div>
                             </div>
-                        </div> -->
+                        </div>
+                        <!-- Gráficas de pH para incubadora 1 y 3 -->
                         <div class="row">
-                            <div class="col-xl-12">
+                            <div class="col-xl-6">
                                 <div class="card mb-4">
                                     <div class="card-header">
                                         <i class="fas fa-chart-line me-1"></i>
-                                        Historial de pH (todas las incubadoras)
+                                        Historial de pH de incubadora 1
                                     </div>
                                     <div class="card-body"><canvas id="myPhChart" width="100%" height="40"></canvas></div>
                                 </div>
                             </div>
+                            <div class="col-xl-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-line me-1"></i>
+                                        Historial de pH de incubadora 3
+                                    </div>
+                                    <div class="card-body"><canvas id="myPhChart3" width="100%" height="40"></canvas></div>
+                                </div>
+                            </div>
                         </div>
-
-                        <!-- Nueva sección: Filtros de monitoreo y gráficas pH -->
-                        <hr class="mt-5 mb-4">
+                        <!-- Sección de filtros -->
                         <div class="card mb-4">
                             <div class="card-header">
                                 <i class="fas fa-filter me-1"></i>
@@ -1283,40 +1232,6 @@
                                         <button type="button" id="applyFilter" class="btn btn-primary w-100">Aplicar filtro</button>
                                     </div>
                                 </form>
-                            </div>
-                        </div>
-                        <!-- Tarjetas informativas incubadora 3 -->
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="card text-white bg-success mb-3">
-                                    <div class="card-header">Incubadora 3</div>
-                                    <div class="card-body">
-                                        <h5 class="card-title">Temperatura: <span id="tempCard3">--</span></h5>
-                                        <h5 class="card-title">Humedad: <span id="humCard3">--</span></h5>
-                                        <h5 class="card-title">pH: <span id="phCard3">--</span></h5>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Gráficas de pH para incubadora 1 y 3 -->
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-vial me-1"></i>
-                                        pH - Incubadora 1
-                                    </div>
-                                    <div class="card-body"><canvas id="myPhChart" width="100%" height="30"></canvas></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-vial me-1"></i>
-                                        pH - Incubadora 3
-                                    </div>
-                                    <div class="card-body"><canvas id="myPhChart3" width="100%" height="30"></canvas></div>
-                                </div>
                             </div>
                         </div>
                     </div>
