@@ -7,6 +7,7 @@ let myAreaChart2;
 let myAreaChart3;
 let myPhChart;
 let myPhChart3;
+let filteredTempChart, filteredHumChart, filteredPhChart;
 
 // Inicializar el gráfico cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
@@ -302,7 +303,33 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Filtros funcionales
+  // Inicializar nuevas gráficas filtradas al cargar DOM
+  var ctxFilteredTemp = document.getElementById("filteredTempChart");
+  var ctxFilteredHum = document.getElementById("filteredHumChart");
+  var ctxFilteredPh = document.getElementById("filteredPhChart");
+  if (ctxFilteredTemp) {
+    filteredTempChart = new Chart(ctxFilteredTemp, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Temperatura', borderColor: '#007bff', data: [] }] },
+      options: { legend: { display: true } }
+    });
+  }
+  if (ctxFilteredHum) {
+    filteredHumChart = new Chart(ctxFilteredHum, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Humedad', borderColor: '#28a745', data: [] }] },
+      options: { legend: { display: true } }
+    });
+  }
+  if (ctxFilteredPh) {
+    filteredPhChart = new Chart(ctxFilteredPh, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'pH', borderColor: '#ffc107', data: [] }] },
+      options: { legend: { display: true }, scales: { yAxes: [{ ticks: { min: 0, max: 14 } }] } }
+    });
+  }
+
+  // Filtro funcional para nuevas gráficas
   const applyBtn = document.getElementById('applyFilter');
   if (applyBtn) {
     applyBtn.addEventListener('click', async function() {
@@ -311,8 +338,52 @@ document.addEventListener('DOMContentLoaded', function() {
       const endVal = document.getElementById('endTime').value;
       const startISO = startVal ? new Date(startVal).toISOString() : null;
       const endISO = endVal ? new Date(endVal).toISOString() : null;
+      const data = await fetchIncubatorData(incubadora);
+      const filtered = filterByRange(data, startISO, endISO);
+      const timestamps = filtered.map(d => d.timestamp);
+      const temps = filtered.map(d => d.temp);
+      const hums = filtered.map(d => d.hum);
+      const phs = filtered.map(d => d.ph);
+      if (filteredTempChart) {
+        filteredTempChart.data.labels = timestamps;
+        filteredTempChart.data.datasets[0].data = temps;
+        filteredTempChart.update();
+      }
+      if (filteredHumChart) {
+        filteredHumChart.data.labels = timestamps;
+        filteredHumChart.data.datasets[0].data = hums;
+        filteredHumChart.update();
+      }
+      if (filteredPhChart) {
+        filteredPhChart.data.labels = timestamps;
+        filteredPhChart.data.datasets[0].data = phs;
+        filteredPhChart.update();
+      }
+    });
+  }
+
+  // Filtros funcionales
+  const applyBtn2 = document.getElementById('applyFilter');
+  if (applyBtn2) {
+    applyBtn2.addEventListener('click', async function() {
+      const incubadora = document.getElementById('incubatorSelect').value;
+      const startVal = document.getElementById('startTime').value;
+      const endVal = document.getElementById('endTime').value;
+      const startISO = startVal ? new Date(startVal).toISOString() : null;
+      const endISO = endVal ? new Date(endVal).toISOString() : null;
       await updateAllChartsFiltered(incubadora, startISO, endISO);
     });
+  }
+
+  // Mostrar pH de incubadora 3 en tarjetas
+  const data3 = await fetchIncubatorData(3);
+  if (data3.length > 0) {
+    const last = data3[data3.length - 1];
+    const ph3 = last.ph !== undefined && last.ph !== null ? last.ph : '--';
+    const ph3El = document.getElementById('pH_3');
+    if (ph3El) ph3El.innerText = ph3;
+    const phCardBody3 = document.getElementById('phCardBody3');
+    if (phCardBody3) phCardBody3.innerText = (ph3 !== '--') ? `pH actual: ${ph3}` : 'Sin datos de pH';
   }
 });
 
@@ -355,7 +426,7 @@ function updatePhChart(timestamps, phValues) {
   }
 }
 
-// --- Funciones para cargar y filtrar datos desde Firebase RTDB ---
+// --- Función para obtener datos de Firebase para incubadora N ---
 async function fetchIncubatorData(incubadora) {
   const url = `https://ranitas-test-default-rtdb.firebaseio.com/Incu${incubadora}.json`;
   const resp = await fetch(url);
