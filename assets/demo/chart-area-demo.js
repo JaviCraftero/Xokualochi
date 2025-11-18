@@ -10,7 +10,7 @@ let myPhChart3;
 let filteredTempChart, filteredHumChart, filteredPhChart;
 
 // Inicializar el gráfico cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   var ctx = document.getElementById("myAreaChart");
   if (ctx) {
     myAreaChart = new Chart(ctx, {
@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Función para actualizar el gráfico con nuevos datos
-function updateAreaChart(timestamps, temperatures, humidities) {
+window.updateAreaChart = function(timestamps, temperatures, humidities) {
   if (myAreaChart) {
     myAreaChart.data.labels = timestamps;
     myAreaChart.data.datasets[0].data = temperatures;
@@ -396,9 +396,7 @@ function updateAreaChart(timestamps, temperatures, humidities) {
     myAreaChart.update();
   }
 }
-
-// Función para actualizar el gráfico de Incubadora 2
-function updateAreaChart2(timestamps, temperatures, humidities) {
+window.updateAreaChart2 = function(timestamps, temperatures, humidities) {
   if (myAreaChart2) {
     myAreaChart2.data.labels = timestamps;
     myAreaChart2.data.datasets[0].data = temperatures;
@@ -406,9 +404,7 @@ function updateAreaChart2(timestamps, temperatures, humidities) {
     myAreaChart2.update();
   }
 }
-
-// Función para actualizar el gráfico de Incubadora 3
-function updateAreaChart3(timestamps, temperatures, humidities) {
+window.updateAreaChart3 = function(timestamps, temperatures, humidities) {
   if (myAreaChart3) {
     myAreaChart3.data.labels = timestamps;
     myAreaChart3.data.datasets[0].data = temperatures;
@@ -416,9 +412,7 @@ function updateAreaChart3(timestamps, temperatures, humidities) {
     myAreaChart3.update();
   }
 }
-
-// Función para actualizar el gráfico de pH
-function updatePhChart(timestamps, phValues) {
+window.updatePhChart = function(timestamps, phValues) {
   if (myPhChart) {
     myPhChart.data.labels = timestamps;
     myPhChart.data.datasets[0].data = phValues;
