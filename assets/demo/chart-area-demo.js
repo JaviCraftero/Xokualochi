@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         {
           label: "Humedad",
           lineTension: 0.3,
-          backgroundColor: "rgba(220,53,69,0.2)",
+          backgroundColor: "rgba(220,53,
           borderColor: "rgba(220,53,69,1)",
           pointRadius: 5,
           pointBackgroundColor: "rgba(220,53,69,1)",
@@ -372,6 +372,55 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (ph3El) ph3El.innerText = ph3;
     const phCardBody3 = document.getElementById('phCardBody3');
     if (phCardBody3) phCardBody3.innerText = (ph3 !== '--') ? `pH actual: ${ph3}` : 'Sin datos de pH';
+  }
+
+  // --- Funciones para actualizar gráficas principales desde el historial global ---
+  async function updateAreaChart2FromHistorial() {
+    const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const json = await resp.json();
+    if (!json) return;
+    const datos = Object.values(json).filter(r => r.origen === 'Incu2' && r.PromT > 0 && r.PromH > 0 && r.timestamp);
+    const timestamps = datos.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const temps = datos.map(r => r.PromT);
+    const hums = datos.map(r => r.PromH);
+    window.updateAreaChart2(timestamps, temps, hums);
+  }
+  async function updateAreaChart3FromHistorial() {
+    const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const json = await resp.json();
+    if (!json) return;
+    const datos = Object.values(json).filter(r => r.origen === 'Incu3' && r.PromT > 0 && r.PromH > 0 && r.timestamp);
+    const timestamps = datos.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const temps = datos.map(r => r.PromT);
+    const hums = datos.map(r => r.PromH);
+    window.updateAreaChart3(timestamps, temps, hums);
+  }
+  async function updatePhChart3FromHistorial() {
+    const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const json = await resp.json();
+    if (!json) return;
+    const datos = Object.values(json).filter(r => r.origen === 'Incu3' && r.pH > 0 && r.timestamp);
+    const timestamps = datos.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const phs = datos.map(r => r.pH);
+    window.updatePhChart3(timestamps, phs);
+  }
+  // Llamar estas funciones al cargar la página
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    updateAreaChart2FromHistorial();
+    updateAreaChart3FromHistorial();
+    updatePhChart3FromHistorial();
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      updateAreaChart2FromHistorial();
+      updateAreaChart3FromHistorial();
+      updatePhChart3FromHistorial();
+    });
   }
 });
 
