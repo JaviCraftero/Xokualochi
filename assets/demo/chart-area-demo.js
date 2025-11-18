@@ -333,13 +333,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   const applyBtn = document.getElementById('applyFilter');
   if (applyBtn) {
     applyBtn.addEventListener('click', async function() {
-      const incubadora = document.getElementById('incubatorSelect').value;
       const startVal = document.getElementById('startTime').value;
       const endVal = document.getElementById('endTime').value;
       const startISO = startVal ? new Date(startVal).toISOString() : null;
       const endISO = endVal ? new Date(endVal).toISOString() : null;
-      const data = await fetchIncubatorData(incubadora);
-      const filtered = filterByRange(data, startISO, endISO);
+      const filtered = await fetchHistorialByRange(startISO, endISO);
       const timestamps = filtered.map(d => d.timestamp);
       const temps = filtered.map(d => d.temp);
       const hums = filtered.map(d => d.hum);
@@ -347,16 +345,19 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (filteredTempChart) {
         filteredTempChart.data.labels = timestamps;
         filteredTempChart.data.datasets[0].data = temps;
+        filteredTempChart.options.scales = { yAxes: [{ ticks: { min: 0, max: 40 } }] };
         filteredTempChart.update();
       }
       if (filteredHumChart) {
         filteredHumChart.data.labels = timestamps;
         filteredHumChart.data.datasets[0].data = hums;
+        filteredHumChart.options.scales = { yAxes: [{ ticks: { min: 0, max: 100 } }] };
         filteredHumChart.update();
       }
       if (filteredPhChart) {
         filteredPhChart.data.labels = timestamps;
         filteredPhChart.data.datasets[0].data = phs;
+        filteredPhChart.options.scales = { yAxes: [{ ticks: { min: 0, max: 14 } }] };
         filteredPhChart.update();
       }
     });
@@ -436,6 +437,37 @@ async function fetchIncubatorData(incubadora) {
     return ta - tb;
   });
   return arr;
+}
+
+// --- Nueva función para obtener y filtrar datos del historial global por rango de fechas ---
+async function fetchHistorialByRange(startISO, endISO) {
+  const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
+  const resp = await fetch(url);
+  if (!resp.ok) return [];
+  const json = await resp.json();
+  if (!json) return [];
+  const arr = Object.values(json).map(item => ({
+    timestamp: item.timestamp || item.time || item.fecha || item.date || null,
+    temp: item.PromT !== undefined ? Number(item.PromT) : null,
+    hum: item.PromH !== undefined ? Number(item.PromH) : null,
+    ph: item.pH !== undefined ? Number(item.pH) : null
+  }));
+  arr.sort((a,b) => {
+    const ta = a.timestamp ? Date.parse(a.timestamp) : 0;
+    const tb = b.timestamp ? Date.parse(b.timestamp) : 0;
+    return ta - tb;
+  });
+  // Filtrar por rango de fechas
+  const start = startISO ? new Date(startISO) : null;
+  const end = endISO ? new Date(endISO) : null;
+  return arr.filter(d => {
+    if (!d.timestamp) return false;
+    const t = new Date(d.timestamp);
+    if (isNaN(t)) return false;
+    if (start && t < start) return false;
+    if (end && t > end) return false;
+    return true;
+  });
 }
 
 function filterByRange(data, startISO, endISO) {
