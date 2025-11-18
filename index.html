@@ -51,7 +51,7 @@
             // Referencias a las imágenes
             const imageRef1 = storageRef(storage, 'Incubadora_1/foto.jpg');
             const imageRef2 = storageRef(storage, 'Incubadora_2/foto.jpg');
-            const imageRef3 = storageRef(storage, 'Incubadora_3/foto.jpg');  // Nueva referencia para Incubadora 3
+            const imageRef3
             
             let cascadaState = "OFF";
             let lastSaveTime = 0;
@@ -701,6 +701,42 @@
                         console.error("Error al generar CSV:", error);
                     }
                 });
+
+                // Guardar en historial los datos de Incu2 e Incu3 (incluyendo pH de Incu3) al recargar la página
+                async function saveCurrentDataToHistorial() {
+                    // Incubadora 2
+                    const snapshot2 = await get(dataRef2);
+                    if (snapshot2.exists()) {
+                        const data2 = snapshot2.val();
+                        const registro2 = {
+                            ...data2,
+                            timestamp: new Date().toISOString(),
+                            origen: 'Incu2'
+                        };
+                        push(historialRef, registro2).then(() => {
+                            console.log('Datos Incu2 guardados en historial');
+                        }).catch(error => {
+                            console.error('Error al guardar Incu2 en historial:', error);
+                        });
+                    }
+                    // Incubadora 3
+                    const snapshot3 = await get(dataRef3);
+                    if (snapshot3.exists()) {
+                        const data3 = snapshot3.val();
+                        const registro3 = {
+                            ...data3,
+                            timestamp: new Date().toISOString(),
+                            origen: 'Incu3'
+                        };
+                        push(historialRef, registro3).then(() => {
+                            console.log('Datos Incu3 guardados en historial');
+                        }).catch(error => {
+                            console.error('Error al guardar Incu3 en historial:', error);
+                        });
+                    }
+                }
+                // Llamar al guardar al cargar la página
+                saveCurrentDataToHistorial();
             });
           </script>
           <style>
@@ -1317,23 +1353,16 @@
                             </div>
                             <div class="card-body">
                                 <form class="row g-3">
-                                    <div class="col-md-3">
-                                        <label for="incubatorSelect" class="form-label">Incubadora</label>
-                                        <select id="incubatorSelect" class="form-select">
-                                            <option value="1">Incubadora 1</option>
-                                            <option value="2">Incubadora 2</option>
-                                            <option value="3">Incubadora 3</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
+                                    <!-- Eliminar el combobox de incubadora -->
+                                    <div class="col-md-4">
                                         <label for="startTime" class="form-label">Desde</label>
                                         <input type="datetime-local" id="startTime" class="form-control" />
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label for="endTime" class="form-label">Hasta</label>
                                         <input type="datetime-local" id="endTime" class="form-control" />
                                     </div>
-                                    <div class="col-md-3 d-flex align-items-end">
+                                    <div class="col-md-4 d-flex align-items-end">
                                         <button type="button" id="applyFilter" class="btn btn-primary w-100">Aplicar filtro</button>
                                     </div>
                                 </form>
