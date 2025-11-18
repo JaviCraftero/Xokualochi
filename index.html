@@ -738,6 +738,11 @@
                 // Llamar al guardar al cargar la página
                 saveCurrentDataToHistorial();
             });
+
+            // Después de definir las funciones updateAreaChart, updateAreaChart2 y updateAreaChart3 en el script principal, asegúrate de exponerlas al scope global:
+            window.updateAreaChart = updateAreaChart;
+            window.updateAreaChart2 = updateAreaChart2;
+            window.updateAreaChart3 = updateAreaChart3;
           </script>
           <style>
             .sensor-data {
