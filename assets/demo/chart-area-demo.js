@@ -362,19 +362,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
-  // Filtros funcionales
-  const applyBtn2 = document.getElementById('applyFilter');
-  if (applyBtn2) {
-    applyBtn2.addEventListener('click', async function() {
-      const incubadora = document.getElementById('incubatorSelect').value;
-      const startVal = document.getElementById('startTime').value;
-      const endVal = document.getElementById('endTime').value;
-      const startISO = startVal ? new Date(startVal).toISOString() : null;
-      const endISO = endVal ? new Date(endVal).toISOString() : null;
-      await updateAllChartsFiltered(incubadora, startISO, endISO);
-    });
-  }
-
   // Mostrar pH de incubadora 3 en tarjetas
   const data3 = await fetchIncubatorData(3);
   if (data3.length > 0) {
@@ -419,6 +406,13 @@ window.updatePhChart = function(timestamps, phValues) {
     myPhChart.update();
   }
 }
+window.updatePhChart3 = function(timestamps, phValues) {
+  if (myPhChart3) {
+    myPhChart3.data.labels = timestamps;
+    myPhChart3.data.datasets[0].data = phValues;
+    myPhChart3.update();
+  }
+}
 
 // --- Función para obtener datos de Firebase para incubadora N ---
 async function fetchIncubatorData(incubadora) {
@@ -459,34 +453,4 @@ function filterByRange(data, startISO, endISO) {
 }
 
 // --- Actualización de gráficas filtradas ---
-async function updateAllChartsFiltered(incubadora, startISO, endISO) {
-  // Temperatura y humedad
-  for (let i = 1; i <= 3; i++) {
-    const data = await fetchIncubatorData(i);
-    const filtered = filterByRange(data, startISO, endISO);
-    const timestamps = filtered.map(d => d.timestamp);
-    const temps = filtered.map(d => d.temp);
-    const hums = filtered.map(d => d.hum);
-    if (i === 1) updateAreaChart(timestamps, temps, hums);
-    if (i === 2) updateAreaChart2(timestamps, temps, hums);
-    if (i === 3) updateAreaChart3(timestamps, temps, hums);
-  }
-  // pH incubadora 1
-  if (myPhChart) {
-    const data1 = await fetchIncubatorData(1);
-    const filtered1 = filterByRange(data1, startISO, endISO);
-    const timestamps1 = filtered1.map(d => d.timestamp);
-    const phs1 = filtered1.map(d => d.ph);
-    updatePhChart(timestamps1, phs1);
-  }
-  // pH incubadora 3
-  if (myPhChart3) {
-    const data3 = await fetchIncubatorData(3);
-    const filtered3 = filterByRange(data3, startISO, endISO);
-    const timestamps3 = filtered3.map(d => d.timestamp);
-    const phs3 = filtered3.map(d => d.ph);
-    myPhChart3.data.labels = timestamps3;
-    myPhChart3.data.datasets[0].data = phs3;
-    myPhChart3.update();
-  }
-}
+// (NO USAR updateAllChartsFiltered en el filtro, solo para referencia interna si se requiere)
