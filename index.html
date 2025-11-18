@@ -452,8 +452,10 @@
             function updateNotificationsIncu3(data) {
                 const tempCard = document.getElementById('tempCard3');
                 const humCard = document.getElementById('humCard3');
+                const phCard = document.getElementById('phCard3');
                 const tempCardBody = document.getElementById('tempCardBody3');
                 const humCardBody = document.getElementById('humCardBody3');
+                const phCardBody = document.getElementById('phCardBody3');
 
                 // Verificar temperatura
                 const temp = parseFloat(data.PromT);
@@ -491,6 +493,25 @@
                 } else {
                     humCard.className = 'card bg-success text-white mb-4';
                     humCardBody.textContent = `Humedad OK: ${hum}%`;
+                }
+
+                // Verificar pH
+                const ph = parseFloat(data.pH);
+                if (!isValidValue(ph)) {
+                    phCard.className = 'card bg-warning text-white mb-4';
+                    phCardBody.textContent = '⚠️ Error: Datos de pH inválidos';
+                    showNotification('Error de Sensor - Incubadora 3', 
+                        'Los datos de pH son inválidos o no están disponibles',
+                        'warning');
+                } else if (ph < 6.2 || ph > 7.8) {
+                    phCard.className = 'card bg-danger text-white mb-4';
+                    phCardBody.textContent = `¡Alerta! pH ${ph} fuera de rango (6.2-7.8)`;
+                    showNotification('¡Alerta de pH! - Incubadora 3', 
+                        `El pH está en ${ph} (Rango ideal: 6.2-7.8)`,
+                        'danger');
+                } else {
+                    phCard.className = 'card bg-success text-white mb-4';
+                    phCardBody.textContent = `pH OK: ${ph}`;
                 }
             }
 
