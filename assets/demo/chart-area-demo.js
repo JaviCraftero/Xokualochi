@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         {
           label: "Humedad",
           lineTension: 0.3,
-          backgroundColor: "rgba(220,53,
+          backgroundColor: "rgba(220,53,69,0.2)",
           borderColor: "rgba(220,53,69,1)",
           pointRadius: 5,
           pointBackgroundColor: "rgba(220,53,69,1)",
