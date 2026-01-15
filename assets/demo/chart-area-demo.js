@@ -10,7 +10,7 @@ let myPhChart3;
 let filteredTempChart, filteredHumChart, filteredPhChart;
 
 // Inicializar el gráfico cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
   var ctx = document.getElementById("myAreaChart");
   if (ctx) {
     myAreaChart = new Chart(ctx, {
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Filtro funcional para nuevas gráficas
   const applyBtn = document.getElementById('applyFilter');
   if (applyBtn) {
-    applyBtn.addEventListener('click', async function() {
+    applyBtn.addEventListener('click', async function () {
       const startVal = document.getElementById('startTime').value;
       const endVal = document.getElementById('endTime').value;
       const startISO = startVal ? new Date(startVal).toISOString() : null;
@@ -399,18 +399,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     const hums = datos.map(r => r.PromH);
     window.updateAreaChart3(timestamps, temps, hums);
   }
+  // Función para actualizar gráfica de pH de incubadora 3 (myPhChart3)
+  // Filtro: últimas 24 horas y pH > 7.3
   async function updatePhChart3FromHistorial() {
     const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
     const resp = await fetch(url);
     if (!resp.ok) return;
     const json = await resp.json();
     if (!json) return;
-    const datos = Object.values(json).filter(r => r.origen === 'Incu3' && r.pH > 0 && r.timestamp);
+    const now = new Date();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    // Filtrar: últimas 24 horas y pH > 7.3
+    const datos = Object.values(json).filter(r => {
+      if (!r.timestamp || !r.pH) return false;
+      const readingDate = new Date(r.timestamp);
+      const phValue = parseFloat(r.pH);
+      return !isNaN(readingDate) &&
+        (now - readingDate) <= oneDayMs &&
+        !isNaN(phValue) &&
+        phValue > 7.3;
+    });
+    // Ordenar por timestamp
+    datos.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const timestamps = datos.map(r => new Date(r.timestamp).toLocaleTimeString());
-    const phs = datos.map(r => r.pH);
+    const phs = datos.map(r => parseFloat(r.pH));
     window.updatePhChart3(timestamps, phs);
   }
-  
+
   // Función para actualizar gráfica de pH de incubadora 1 y 2 (myPhChart)
   // Filtro: últimas 24 horas y pH < 7.3
   async function updatePhChartFromHistorial() {
@@ -426,11 +441,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (!r.timestamp || !r.pH) return false;
       const readingDate = new Date(r.timestamp);
       const phValue = parseFloat(r.pH);
-      return !isNaN(readingDate) && 
-             (now - readingDate) <= oneDayMs && 
-             !isNaN(phValue) && 
-             phValue < 7.3 && 
-             phValue > 0;
+      return !isNaN(readingDate) &&
+        (now - readingDate) <= oneDayMs &&
+        !isNaN(phValue) &&
+        phValue < 7.3 &&
+        phValue > 0;
     });
     // Ordenar por timestamp
     datos.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -438,7 +453,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const phs = datos.map(r => parseFloat(r.pH));
     window.updatePhChart(timestamps, phs);
   }
-  
+
   // Llamar estas funciones al cargar la página
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     updateAreaChart2FromHistorial();
@@ -453,15 +468,16 @@ document.addEventListener('DOMContentLoaded', async function() {
       updatePhChartFromHistorial(); // <-- Gráfica de pH incubadora 1 y 2
     });
   }
-  
-  // Actualizar gráfica de pH cada 5 minutos
+
+  // Actualizar gráficas de pH cada 5 minutos
   setInterval(() => {
     updatePhChartFromHistorial();
+    updatePhChart3FromHistorial();
   }, 5 * 60 * 1000);
 });
 
 // Función para actualizar el gráfico con nuevos datos
-window.updateAreaChart = function(timestamps, temperatures, humidities) {
+window.updateAreaChart = function (timestamps, temperatures, humidities) {
   if (myAreaChart) {
     myAreaChart.data.labels = timestamps;
     myAreaChart.data.datasets[0].data = temperatures;
@@ -469,7 +485,7 @@ window.updateAreaChart = function(timestamps, temperatures, humidities) {
     myAreaChart.update();
   }
 }
-window.updateAreaChart2 = function(timestamps, temperatures, humidities) {
+window.updateAreaChart2 = function (timestamps, temperatures, humidities) {
   if (myAreaChart2) {
     myAreaChart2.data.labels = timestamps;
     myAreaChart2.data.datasets[0].data = temperatures;
@@ -477,7 +493,7 @@ window.updateAreaChart2 = function(timestamps, temperatures, humidities) {
     myAreaChart2.update();
   }
 }
-window.updateAreaChart3 = function(timestamps, temperatures, humidities) {
+window.updateAreaChart3 = function (timestamps, temperatures, humidities) {
   if (myAreaChart3) {
     myAreaChart3.data.labels = timestamps;
     myAreaChart3.data.datasets[0].data = temperatures;
@@ -485,14 +501,14 @@ window.updateAreaChart3 = function(timestamps, temperatures, humidities) {
     myAreaChart3.update();
   }
 }
-window.updatePhChart = function(timestamps, phValues) {
+window.updatePhChart = function (timestamps, phValues) {
   if (myPhChart) {
     myPhChart.data.labels = timestamps;
     myPhChart.data.datasets[0].data = phValues;
     myPhChart.update();
   }
 }
-window.updatePhChart3 = function(timestamps, phValues) {
+window.updatePhChart3 = function (timestamps, phValues) {
   if (myPhChart3) {
     myPhChart3.data.labels = timestamps;
     myPhChart3.data.datasets[0].data = phValues;
@@ -516,7 +532,7 @@ async function fetchIncubatorData(incubadora) {
       ph: item.ph !== undefined ? Number(item.ph) : (item.pH !== undefined ? Number(item.pH) : null)
     };
   });
-  arr.sort((a,b) => {
+  arr.sort((a, b) => {
     const ta = a.timestamp ? Date.parse(a.timestamp) : 0;
     const tb = b.timestamp ? Date.parse(b.timestamp) : 0;
     return ta - tb;
@@ -537,7 +553,7 @@ async function fetchHistorialByRange(startISO, endISO) {
     hum: item.PromH !== undefined ? Number(item.PromH) : null,
     ph: item.pH !== undefined ? Number(item.pH) : null
   }));
-  arr.sort((a,b) => {
+  arr.sort((a, b) => {
     const ta = a.timestamp ? Date.parse(a.timestamp) : 0;
     const tb = b.timestamp ? Date.parse(b.timestamp) : 0;
     return ta - tb;
