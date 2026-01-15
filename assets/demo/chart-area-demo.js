@@ -410,18 +410,54 @@ document.addEventListener('DOMContentLoaded', async function() {
     const phs = datos.map(r => r.pH);
     window.updatePhChart3(timestamps, phs);
   }
+  
+  // Función para actualizar gráfica de pH de incubadora 1 y 2 (myPhChart)
+  // Filtro: últimas 24 horas y pH < 7.3
+  async function updatePhChartFromHistorial() {
+    const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const json = await resp.json();
+    if (!json) return;
+    const now = new Date();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    // Filtrar: últimas 24 horas, pH < 7.3 y pH > 0
+    const datos = Object.values(json).filter(r => {
+      if (!r.timestamp || !r.pH) return false;
+      const readingDate = new Date(r.timestamp);
+      const phValue = parseFloat(r.pH);
+      return !isNaN(readingDate) && 
+             (now - readingDate) <= oneDayMs && 
+             !isNaN(phValue) && 
+             phValue < 7.3 && 
+             phValue > 0;
+    });
+    // Ordenar por timestamp
+    datos.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const timestamps = datos.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const phs = datos.map(r => parseFloat(r.pH));
+    window.updatePhChart(timestamps, phs);
+  }
+  
   // Llamar estas funciones al cargar la página
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     updateAreaChart2FromHistorial();
     updateAreaChart3FromHistorial();
     updatePhChart3FromHistorial();
+    updatePhChartFromHistorial(); // <-- Gráfica de pH incubadora 1 y 2
   } else {
     document.addEventListener('DOMContentLoaded', () => {
       updateAreaChart2FromHistorial();
       updateAreaChart3FromHistorial();
       updatePhChart3FromHistorial();
+      updatePhChartFromHistorial(); // <-- Gráfica de pH incubadora 1 y 2
     });
   }
+  
+  // Actualizar gráfica de pH cada 5 minutos
+  setInterval(() => {
+    updatePhChartFromHistorial();
+  }, 5 * 60 * 1000);
 });
 
 // Función para actualizar el gráfico con nuevos datos
