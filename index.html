@@ -1,287 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport"
-            content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content />
-        <meta
-            name="Jessica Mariana Monroy Mejía y Javier Enrique Hernández Beltrán"
-            content />
-        <title>Monitoreo de ranas</title>
-        <link
-            href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css"
-            rel="stylesheet" />
-        <link href="css/styles.css" rel="stylesheet" />
-        <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js"
-            crossorigin="anonymous"></script>
-        <link rel="apple-touch-icon" sizes="180x180"
-            href="assets/img/apple-touch-icon.png">
-        <link rel="icon" type="image/png" sizes="32x32"
-            href="assets/img/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16"
-            href="assets/img/favicon-16x16.png">
-        <link rel="manifest" href="assets/img/site.webmanifest">
-        <script type="module">
-            // Import the functions from firebase
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-            import { getDatabase, ref as dbRef, onValue, set, push, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-            import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
-            const firebaseConfig = {
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content />
+    <meta name="Jessica Mariana Monroy Mejía y Javier Enrique Hernández Beltrán" content />
+    <title>Monitoreo de ranas</title>
+    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
+    <link href="css/styles.css" rel="stylesheet" />
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicon-16x16.png">
+    <link rel="manifest" href="assets/img/site.webmanifest">
+    <script type="module">
+        // Import the functions from firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref as dbRef, onValue, set, push, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+        import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+
+        const firebaseConfig = {
             apiKey: "AIzaSyCWthF7mN1h1n99IbFAarl-iyVTiwzYm94",
             authDomain: "ranitas-test.firebaseapp.com",
             databaseURL: "https://ranitas-test-default-rtdb.firebaseio.com",
             projectId: "ranitas-test",
-            storageBucket: "ranitas-test.firebasestorage.app",  
+            storageBucket: "ranitas-test.firebasestorage.app",
             messagingSenderId: "1083017529444",
             appId: "1:1083017529444:web:8e246c28345b89172d7771"
-            };
+        };
 
-            const app = initializeApp(firebaseConfig);
-            const db = getDatabase(app);
-            const storage = getStorage(app);
-            const historialRef = dbRef(db, 'historial');
-            const cascadaRef = dbRef(db, 'CasStatus/cascada');
-            const dataRef1 = dbRef(db, 'Incu1');
-            const dataRef2 = dbRef(db, 'Incu2');
-            const dataRef3 = dbRef(db, 'Incu3');  // Nueva referencia para Incubadora 3
-            
-            // Referencias a las imágenes
-            const imageRef1 = storageRef(storage, 'Incubadora_1/foto.jpg');
-            const imageRef2 = storageRef(storage, 'Incubadora_2/foto.jpg');
-            const imageRef3 = storageRef(storage, 'Incubadora_3/foto.jpg');
-            
-            let cascadaState = "OFF";
-            let lastSaveTime = 0;
-            const SAVE_INTERVAL = 30*60*1000;
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+        const historialRef = dbRef(db, 'historial');
+        const cascadaRef = dbRef(db, 'CasStatus/cascada');
+        const dataRef1 = dbRef(db, 'Incu1');
+        const dataRef2 = dbRef(db, 'Incu2');
+        const dataRef3 = dbRef(db, 'Incu3');  // Nueva referencia para Incubadora 3
 
-            // Función para actualizar las tres imágenes
-            async function updateImages() {
-                try {
-                    // Actualizar imagen de Incubadora 1
-                    const url1 = await getDownloadURL(imageRef1);
-                    const img1 = document.getElementById('Incubadora_1');
-                    img1.src = url1;
+        // Referencias a las imágenes
+        const imageRef1 = storageRef(storage, 'Incubadora_1/foto.jpg');
+        const imageRef2 = storageRef(storage, 'Incubadora_2/foto.jpg');
+        const imageRef3 = storageRef(storage, 'Incubadora_3/foto.jpg');
 
-                    // Actualizar imagen de Incubadora 2
-                    const url2 = await getDownloadURL(imageRef2);
-                    const img2 = document.getElementById('Incubadora_2');
-                    img2.src = url2;
+        let cascadaState = "OFF";
+        let lastSaveTime = 0;
+        const SAVE_INTERVAL = 30 * 60 * 1000;
 
-                    // Actualizar imagen de Incubadora 3
-                    const url3 = await getDownloadURL(imageRef3);
-                    const img3 = document.getElementById('Incubadora_3');
-                    img3.src = url3;
-                } catch (error) {
-                    console.error('Error al actualizar imágenes:', error);
-                }
+        // Función para actualizar las tres imágenes
+        async function updateImages() {
+            try {
+                // Actualizar imagen de Incubadora 1
+                const url1 = await getDownloadURL(imageRef1);
+                const img1 = document.getElementById('Incubadora_1');
+                img1.src = url1;
+
+                // Actualizar imagen de Incubadora 2
+                const url2 = await getDownloadURL(imageRef2);
+                const img2 = document.getElementById('Incubadora_2');
+                img2.src = url2;
+
+                // Actualizar imagen de Incubadora 3
+                const url3 = await getDownloadURL(imageRef3);
+                const img3 = document.getElementById('Incubadora_3');
+                img3.src = url3;
+            } catch (error) {
+                console.error('Error al actualizar imágenes:', error);
+            }
+        }
+
+        // Escuchar el estado actual desde Firebase
+        onValue(cascadaRef, (snapshot) => {
+            cascadaState = snapshot.val() || "OFF"; // Si no existe, inicializa como "OFF"
+            const button = document.getElementById('toggleCascada');
+            button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
+        });
+
+        // Escucha cambios en la base de datos
+        onValue(dataRef1, (snapshot) => {
+            const data = snapshot.val();
+            document.getElementById('DS18').innerText = data.DS18;
+            document.getElementById('Temp1').innerText = data.Temp1;
+            document.getElementById('Temp2').innerText = data.Temp2;
+            document.getElementById('Temp3').innerText = data.Temp3;
+            document.getElementById('Hum1').innerText = data.Hum1;
+            document.getElementById('Hum2').innerText = data.Hum2;
+            document.getElementById('Hum3').innerText = data.Hum3;
+            document.getElementById('PromT').innerText = data.PromT;
+            document.getElementById('PromH').innerText = data.PromH;
+            document.getElementById('pH').innerText = data.pH;
+
+            // Actualizar notificaciones
+            updateNotifications(data);
+
+            const currentTime = Date.now();
+            if (currentTime - lastSaveTime >= SAVE_INTERVAL) {
+                // Guardar en historial
+                const registro = {
+                    ...data,
+                    timestamp: new Date().toISOString()
+                };
+                push(historialRef, registro)
+                    .then(() => {
+                        console.log('Datos guardados en historial');
+                        lastSaveTime = currentTime; // Actualizar el tiempo de la última guardada
+                        // Actualizar el gráfico después de guardar nuevos datos
+                        updateAreaChartWithLatestData();
+                    })
+                    .catch(error => {
+                        console.error('Error al guardar en historial:', error);
+                    });
+            }
+        });
+
+        // Listener para Incu2
+        onValue(dataRef2, (snapshot) => {
+            const data = snapshot.val();
+            document.getElementById('DS18_2').innerText = data.DS18;
+            document.getElementById('Temp1_2').innerText = data.Temp1;
+            document.getElementById('Temp2_2').innerText = data.Temp2;
+            document.getElementById('Temp3_2').innerText = data.Temp3;
+            document.getElementById('Hum1_2').innerText = data.Hum1;
+            document.getElementById('Hum2_2').innerText = data.Hum2;
+            document.getElementById('Hum3_2').innerText = data.Hum3;
+            document.getElementById('PromT_2').innerText = data.PromT;
+            document.getElementById('PromH_2').innerText = data.PromH;
+
+            // Actualizar notificaciones de la incubadora 2
+            updateNotificationsIncu2(data);
+        });
+
+        // Escuchar cambios en la base de datos para Incubadora 3
+        onValue(dataRef3, (snapshot) => {
+            const data = snapshot.val();
+            document.getElementById('DS18_3').innerText = data.DS18;
+            document.getElementById('Temp1_3').innerText = data.Temp1;
+            document.getElementById('Temp2_3').innerText = data.Temp2;
+            document.getElementById('Temp3_3').innerText = data.Temp3;
+            document.getElementById('Hum1_3').innerText = data.Hum1;
+            document.getElementById('Hum2_3').innerText = data.Hum2;
+            document.getElementById('Hum3_3').innerText = data.Hum3;
+            document.getElementById('PromT_3').innerText = data.PromT;
+            document.getElementById('PromH_3').innerText = data.PromH;
+            document.getElementById('pH_3').innerText = data.pH;
+
+            // Actualizar notificaciones de la incubadora 3
+            updateNotificationsIncu3(data);
+        });
+
+        async function generateCSV(data) {
+            const headers = ["DS18", "Temp1", "Temp2", "Temp3", "Hum1", "Hum2", "Hum3", "PromT", "PromH", "pH", "timestamp"];
+            const rows = [headers.join(",")];
+
+            const snapshot = await get(historialRef);
+            if (snapshot.exists()) {
+                const historial = snapshot.val();
+
+                // Arrays para almacenar los datos del gráfico
+                const timestamps = [];
+                const temperatures = [];
+                const humidities = [];
+
+                Object.values(historial).forEach(reading => {
+                    const row = [
+                        reading.DS18 || 0,
+                        reading.Temp1 || 0,
+                        reading.Temp2 || 0,
+                        reading.Temp3 || 0,
+                        reading.Hum1 || 0,
+                        reading.Hum2 || 0,
+                        reading.Hum3 || 0,
+                        reading.PromT || 0,
+                        reading.PromH || 0,
+                        reading.pH || 0,
+                        reading.timestamp
+                    ];
+                    rows.push(row.join(","));
+
+                    // Agregar datos para el gráfico
+                    timestamps.push(new Date(reading.timestamp).toLocaleTimeString());
+                    temperatures.push(reading.PromT || 0);
+                    humidities.push(reading.PromH || 0);
+                });
+
+                // Actualizar el gráfico con los nuevos datos
+                updateAreaChart(timestamps, temperatures, humidities);
             }
 
-            // Escuchar el estado actual desde Firebase
-            onValue(cascadaRef, (snapshot) => {
-                cascadaState = snapshot.val() || "OFF"; // Si no existe, inicializa como "OFF"
-                const button = document.getElementById('toggleCascada');
-                button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
-            });
+            return rows.join("\n");
+        }
 
-            // Escucha cambios en la base de datos
-            onValue(dataRef1, (snapshot) => {
-                const data = snapshot.val();
-                document.getElementById('DS18').innerText = data.DS18;
-                document.getElementById('Temp1').innerText = data.Temp1;
-                document.getElementById('Temp2').innerText = data.Temp2;
-                document.getElementById('Temp3').innerText = data.Temp3;
-                document.getElementById('Hum1').innerText = data.Hum1;
-                document.getElementById('Hum2').innerText = data.Hum2;
-                document.getElementById('Hum3').innerText = data.Hum3;
-                document.getElementById('PromT').innerText = data.PromT;
-                document.getElementById('PromH').innerText = data.PromH;
-                document.getElementById('pH').innerText = data.pH;
+        function downloadCSV(data) {
+            const csvContent = generateCSV(data);
 
-                // Actualizar notificaciones
-                updateNotifications(data);
+            // Crea un enlace para descargar el archivo
+            const blob = new Blob([csvContent], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "datos_sensores.csv"; // Nombre del archivo
+            a.click();
 
-                const currentTime = Date.now();
-                if (currentTime - lastSaveTime >= SAVE_INTERVAL) {
-                    // Guardar en historial
-                    const registro = {
-                        ...data,
-                        timestamp: new Date().toISOString()
-                    };
-                    push(historialRef, registro)
-                        .then(() => {
-                            console.log('Datos guardados en historial');
-                            lastSaveTime = currentTime; // Actualizar el tiempo de la última guardada
-                            // Actualizar el gráfico después de guardar nuevos datos
-                            updateAreaChartWithLatestData();
-                        })
-                        .catch(error => {
-                            console.error('Error al guardar en historial:', error);
-                        });
-                }
-            });
+            // Limpia el objeto URL
+            URL.revokeObjectURL(url);
+        }
 
-            // Listener para Incu2
-            onValue(dataRef2, (snapshot) => {
-                const data = snapshot.val();
-                document.getElementById('DS18_2').innerText = data.DS18;
-                document.getElementById('Temp1_2').innerText = data.Temp1;
-                document.getElementById('Temp2_2').innerText = data.Temp2;
-                document.getElementById('Temp3_2').innerText = data.Temp3;
-                document.getElementById('Hum1_2').innerText = data.Hum1;
-                document.getElementById('Hum2_2').innerText = data.Hum2;
-                document.getElementById('Hum3_2').innerText = data.Hum3;
-                document.getElementById('PromT_2').innerText = data.PromT;
-                document.getElementById('PromH_2').innerText = data.PromH;
-                
-                // Actualizar notificaciones de la incubadora 2
-                updateNotificationsIncu2(data);
-            });
-
-            // Escuchar cambios en la base de datos para Incubadora 3
-            onValue(dataRef3, (snapshot) => {
-                const data = snapshot.val();
-                document.getElementById('DS18_3').innerText = data.DS18;
-                document.getElementById('Temp1_3').innerText = data.Temp1;
-                document.getElementById('Temp2_3').innerText = data.Temp2;
-                document.getElementById('Temp3_3').innerText = data.Temp3;
-                document.getElementById('Hum1_3').innerText = data.Hum1;
-                document.getElementById('Hum2_3').innerText = data.Hum2;
-                document.getElementById('Hum3_3').innerText = data.Hum3;
-                document.getElementById('PromT_3').innerText = data.PromT;
-                document.getElementById('PromH_3').innerText = data.PromH;
-                document.getElementById('pH_3').innerText = data.pH;
-                
-                // Actualizar notificaciones de la incubadora 3
-                updateNotificationsIncu3(data);
-            });
-
-            async function generateCSV(data) {
-                const headers = ["DS18", "Temp1", "Temp2", "Temp3", "Hum1", "Hum2", "Hum3", "PromT", "PromH", "pH", "timestamp"];
-                const rows = [headers.join(",")];
-
+        // Función para actualizar el gráfico con los últimos datos
+        async function updateAreaChartWithLatestData() {
+            try {
                 const snapshot = await get(historialRef);
                 if (snapshot.exists()) {
                     const historial = snapshot.val();
-                    
-                    // Arrays para almacenar los datos del gráfico
                     const timestamps = [];
                     const temperatures = [];
                     const humidities = [];
 
-                    Object.values(historial).forEach(reading => {
-                        const row = [
-                            reading.DS18 || 0,
-                            reading.Temp1 || 0,
-                            reading.Temp2 || 0,
-                            reading.Temp3 || 0,
-                            reading.Hum1 || 0,
-                            reading.Hum2 || 0,
-                            reading.Hum3 || 0,
-                            reading.PromT || 0,
-                            reading.PromH || 0,
-                            reading.pH || 0,
-                            reading.timestamp
-                        ];
-                        rows.push(row.join(","));
+                    // Obtener los últimos 10 registros
+                    const entries = Object.entries(historial);
+                    const lastTenEntries = entries.slice(-10);
 
-                        // Agregar datos para el gráfico
+                    lastTenEntries.forEach(([key, reading]) => {
                         timestamps.push(new Date(reading.timestamp).toLocaleTimeString());
                         temperatures.push(reading.PromT || 0);
                         humidities.push(reading.PromH || 0);
                     });
 
-                    // Actualizar el gráfico con los nuevos datos
+                    // Actualizar el gráfico
                     updateAreaChart(timestamps, temperatures, humidities);
                 }
+            } catch (error) {
+                console.error('Error al actualizar el gráfico:', error);
+            }
+        }
 
-                return rows.join("\n");
+        // Función para solicitar permiso de notificaciones
+        async function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("Este navegador no soporta notificaciones");
+                return;
             }
 
-            function downloadCSV(data) {
-                const csvContent = generateCSV(data);
-
-                // Crea un enlace para descargar el archivo
-                const blob = new Blob([csvContent], { type: "text/csv" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "datos_sensores.csv"; // Nombre del archivo
-                a.click();
-
-                // Limpia el objeto URL
-                URL.revokeObjectURL(url);
+            if (Notification.permission !== "granted") {
+                await Notification.requestPermission();
             }
+        }
 
-            // Función para actualizar el gráfico con los últimos datos
-            async function updateAreaChartWithLatestData() {
-                try {
-                    const snapshot = await get(historialRef);
-                    if (snapshot.exists()) {
-                        const historial = snapshot.val();
-                        const timestamps = [];
-                        const temperatures = [];
-                        const humidities = [];
+        // Variable para controlar si el audio está habilitado
+        let audioEnabled = false;
+        const audio = document.getElementById('alertSound');
 
-                        // Obtener los últimos 10 registros
-                        const entries = Object.entries(historial);
-                        const lastTenEntries = entries.slice(-10);
+        // Función para habilitar el audio
+        function enableAudio() {
+            audioEnabled = true;
+            // Intentar reproducir y silenciar inmediatamente para "desbloquear" el audio
+            audio.volume = 0;
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.volume = 1;
+            }).catch(e => console.log('Error al inicializar audio:', e));
+        }
 
-                        lastTenEntries.forEach(([key, reading]) => {
-                            timestamps.push(new Date(reading.timestamp).toLocaleTimeString());
-                            temperatures.push(reading.PromT || 0);
-                            humidities.push(reading.PromH || 0);
-                        });
+        // Función para mostrar notificación y reproducir sonido
+        function showNotification(title, message, type = 'danger') {
+            // Crear el elemento toast
+            const toastElement = document.createElement('div');
+            toastElement.className = `toast ${type}`;
+            toastElement.setAttribute('role', 'alert');
+            toastElement.setAttribute('aria-live', 'assertive');
+            toastElement.setAttribute('aria-atomic', 'true');
 
-                        // Actualizar el gráfico
-                        updateAreaChart(timestamps, temperatures, humidities);
-                    }
-                } catch (error) {
-                    console.error('Error al actualizar el gráfico:', error);
-                }
-            }
-
-            // Función para solicitar permiso de notificaciones
-            async function requestNotificationPermission() {
-                if (!("Notification" in window)) {
-                    console.log("Este navegador no soporta notificaciones");
-                    return;
-                }
-
-                if (Notification.permission !== "granted") {
-                    await Notification.requestPermission();
-                }
-            }
-
-            // Variable para controlar si el audio está habilitado
-            let audioEnabled = false;
-            const audio = document.getElementById('alertSound');
-
-            // Función para habilitar el audio
-            function enableAudio() {
-                audioEnabled = true;
-                // Intentar reproducir y silenciar inmediatamente para "desbloquear" el audio
-                audio.volume = 0;
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.volume = 1;
-                }).catch(e => console.log('Error al inicializar audio:', e));
-            }
-
-            // Función para mostrar notificación y reproducir sonido
-            function showNotification(title, message, type = 'danger') {
-                // Crear el elemento toast
-                const toastElement = document.createElement('div');
-                toastElement.className = `toast ${type}`;
-                toastElement.setAttribute('role', 'alert');
-                toastElement.setAttribute('aria-live', 'assertive');
-                toastElement.setAttribute('aria-atomic', 'true');
-                
-                // Crear el contenido del toast
-                toastElement.innerHTML = `
+            // Crear el contenido del toast
+            toastElement.innerHTML = `
                     <div class="toast-header">
                         <strong class="me-auto">${title}</strong>
                         <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -291,1134 +283,1116 @@
                     </div>
                 `;
 
-                // Agregar el toast al contenedor
-                document.getElementById('toastContainer').appendChild(toastElement);
+            // Agregar el toast al contenedor
+            document.getElementById('toastContainer').appendChild(toastElement);
 
-                // Inicializar el toast con Bootstrap
-                const toast = new bootstrap.Toast(toastElement, {
-                    animation: true,
-                    autohide: true,
-                    delay: 5000
-                });
-                
-                // Mostrar el toast
-                toast.show();
-
-                // Reproducir sonido solo si está habilitado y el tipo es 'danger' o 'warning'
-                if (audioEnabled && (type === 'danger' || type === 'warning')) {
-                    const audio = document.getElementById('alertSound');
-                    if (audio) {
-                        audio.currentTime = 0; // Reiniciar el audio si ya estaba reproduciéndose
-                        audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
-                    }
-                }
-
-                // Eliminar el toast del DOM después de ocultarse
-                toastElement.addEventListener('hidden.bs.toast', () => {
-                    toastElement.remove();
-                });
-            }
-
-            // Manejar la interacción inicial del usuario
-            document.addEventListener('click', function initAudio() {
-                enableAudio();
-                // Remover el listener después de la primera interacción
-                document.removeEventListener('click', initAudio);
-            }, { once: true });
-
-            // Función para validar si un valor es válido
-            function isValidValue(value) {
-                return value !== null && 
-                       value !== undefined && 
-                       !isNaN(value) &&
-                       value !== 0 && // En el código del ESP32, 0 se usa como indicador de error para algunos sensores
-                       value !== -1;  // En el código del ESP32, -1 se usa como indicador de error para promedios
-            }
-
-            // Función para actualizar las notificaciones
-            function updateNotifications(data) {
-                const tempCard = document.getElementById('tempCard');
-                const phCard = document.getElementById('phCard'); 
-                const humCard = document.getElementById('humCard');
-                const tempCardBody = document.getElementById('tempCardBody');
-                const phCardBody = document.getElementById('phCardBody');
-                const humCardBody = document.getElementById('humCardBody');
-
-                // Verificar temperatura
-                const temp = parseFloat(data.PromT);
-                if (!isValidValue(temp)) {
-                    tempCard.className = 'card bg-warning text-white mb-4';
-                    tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
-                    showNotification('Error de Sensor', 
-                        'Los datos de temperatura son inválidos o no están disponibles',
-                        'warning');
-                } else if (temp < 20 || temp > 35) {
-                    tempCard.className = 'card bg-danger text-white mb-4';
-                    tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
-                    showNotification('¡Alerta de Temperatura!', 
-                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
-                        'danger');
-                } else {
-                    tempCard.className = 'card bg-success text-white mb-4';
-                    tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
-                }
-
-                // Verificar pH
-                const ph = parseFloat(data.pH);
-                if (!isValidValue(ph)) {
-                    phCard.className = 'card bg-warning text-white mb-4';
-                    phCardBody.textContent = '⚠️ Error: Datos de pH inválidos';
-                    showNotification('Error de Sensor', 
-                        'Los datos de pH son inválidos o no están disponibles',
-                        'warning');
-                } else if (ph < 6.2 || ph > 7.8) {
-                    phCard.className = 'card bg-danger text-white mb-4';
-                    phCardBody.textContent = `¡Alerta! pH ${ph} fuera de rango (6.2-7.8)`;
-                    showNotification('¡Alerta de pH!', 
-                        `El pH está en ${ph} (Rango ideal: 6.2-7.8)`,
-                        'danger');
-                } else {
-                    phCard.className = 'card bg-success text-white mb-4';
-                    phCardBody.textContent = `pH OK: ${ph}`;
-                }
-
-                // Verificar humedad
-                const hum = parseFloat(data.PromH);
-                if (!isValidValue(hum)) {
-                    humCard.className = 'card bg-warning text-white mb-4';
-                    humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
-                    showNotification('Error de Sensor', 
-                        'Los datos de humedad son inválidos o no están disponibles',
-                        'warning');
-                } else if (hum < 70) {
-                    humCard.className = 'card bg-danger text-white mb-4';
-                    humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
-                    showNotification('¡Alerta de Humedad!', 
-                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
-                        'danger');
-                } else {
-                    humCard.className = 'card bg-success text-white mb-4';
-                    humCardBody.textContent = `Humedad OK: ${hum}%`;
-                }
-            }
-
-            // Función para actualizar las notificaciones de la Incubadora 2
-            function updateNotificationsIncu2(data) {
-                const tempCard = document.getElementById('tempCard2');
-                const humCard = document.getElementById('humCard2');
-                const tempCardBody = document.getElementById('tempCardBody2');
-                const humCardBody = document.getElementById('humCardBody2');
-
-                // Verificar temperatura
-                const temp = parseFloat(data.PromT);
-                if (!isValidValue(temp)) {
-                    tempCard.className = 'card bg-warning text-white mb-4';
-                    tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
-                    showNotification('Error de Sensor - Incubadora 2', 
-                        'Los datos de temperatura son inválidos o no están disponibles',
-                        'warning');
-                } else if (temp < 20 || temp > 35) {
-                    tempCard.className = 'card bg-danger text-white mb-4';
-                    tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
-                    showNotification('¡Alerta de Temperatura! - Incubadora 2', 
-                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
-                        'danger');
-                } else {
-                    tempCard.className = 'card bg-success text-white mb-4';
-                    tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
-                }
-
-                // Verificar humedad
-                const hum = parseFloat(data.PromH);
-                if (!isValidValue(hum)) {
-                    humCard.className = 'card bg-warning text-white mb-4';
-                    humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
-                    showNotification('Error de Sensor - Incubadora 2', 
-                        'Los datos de humedad son inválidos o no están disponibles',
-                        'warning');
-                } else if (hum < 70) {
-                    humCard.className = 'card bg-danger text-white mb-4';
-                    humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
-                    showNotification('¡Alerta de Humedad! - Incubadora 2', 
-                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
-                        'danger');
-                } else {
-                    humCard.className = 'card bg-success text-white mb-4';
-                    humCardBody.textContent = `Humedad OK: ${hum}%`;
-                }
-            }
-
-            // Función para actualizar las notificaciones de la Incubadora 3
-            function updateNotificationsIncu3(data) {
-                const tempCard = document.getElementById('tempCard3');
-                const humCard = document.getElementById('humCard3');
-                const phCard = document.getElementById('phCard3');
-                const tempCardBody = document.getElementById('tempCardBody3');
-                const humCardBody = document.getElementById('humCardBody3');
-                const phCardBody = document.getElementById('phCardBody3');
-
-                // Verificar temperatura
-                const temp = parseFloat(data.PromT);
-                if (!isValidValue(temp)) {
-                    tempCard.className = 'card bg-warning text-white mb-4';
-                    tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
-                    showNotification('Error de Sensor - Incubadora 3', 
-                        'Los datos de temperatura son inválidos o no están disponibles',
-                        'warning');
-                } else if (temp < 20 || temp > 35) {
-                    tempCard.className = 'card bg-danger text-white mb-4';
-                    tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
-                    showNotification('¡Alerta de Temperatura! - Incubadora 3', 
-                        `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
-                        'danger');
-                } else {
-                    tempCard.className = 'card bg-success text-white mb-4';
-                    tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
-                }
-
-                // Verificar humedad
-                const hum = parseFloat(data.PromH);
-                if (!isValidValue(hum)) {
-                    humCard.className = 'card bg-warning text-white mb-4';
-                    humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
-                    showNotification('Error de Sensor - Incubadora 3', 
-                        'Los datos de humedad son inválidos o no están disponibles',
-                        'warning');
-                } else if (hum < 70) {
-                    humCard.className = 'card bg-danger text-white mb-4';
-                    humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
-                    showNotification('¡Alerta de Humedad! - Incubadora 3', 
-                        `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
-                        'danger');
-                } else {
-                    humCard.className = 'card bg-success text-white mb-4';
-                    humCardBody.textContent = `Humedad OK: ${hum}%`;
-                }
-
-                // Verificar pH
-                const ph = parseFloat(data.pH);
-                if (!isValidValue(ph)) {
-                    phCard.className = 'card bg-warning text-white mb-4';
-                    phCardBody.textContent = '⚠️ Error: Datos de pH inválidos';
-                    showNotification('Error de Sensor - Incubadora 3', 
-                        'Los datos de pH son inválidos o no están disponibles',
-                        'warning');
-                } else if (ph < 6.2 || ph > 7.8) {
-                    phCard.className = 'card bg-danger text-white mb-4';
-                    phCardBody.textContent = `¡Alerta! pH ${ph} fuera de rango (6.2-7.8)`;
-                    showNotification('¡Alerta de pH! - Incubadora 3', 
-                        `El pH está en ${ph} (Rango ideal: 6.2-7.8)`,
-                        'danger');
-                } else {
-                    phCard.className = 'card bg-success text-white mb-4';
-                    phCardBody.textContent = `pH OK: ${ph}`;
-                }
-            }
-
-            // --- FUNCIONES PARA ACTUALIZAR GRÁFICAS DE INCUBADORAS Y PH ---
-
-            // Función para obtener y graficar historial de una incubadora
-            async function updateIncubatorChart(historialPath, updateChartFn, tempKey = 'PromT', humKey = 'PromH') {
-                const db = getDatabase();
-                const ref = dbRef(db, historialPath);
-                try {
-                    const snapshot = await get(ref);
-                    if (snapshot.exists()) {
-                        const historial = snapshot.val();
-                        const timestamps = [];
-                        const temperatures = [];
-                        const humidities = [];
-                        Object.values(historial).forEach(reading => {
-                            timestamps.push(new Date(reading.timestamp).toLocaleTimeString());
-                            temperatures.push(reading[tempKey] || 0);
-                            humidities.push(reading[humKey] || 0);
-                        });
-                        updateChartFn(timestamps, temperatures, humidities);
-                    }
-                } catch (error) {
-                    console.error('Error al actualizar gráfica:', error);
-                }
-            }
-
-            // Función para obtener y graficar historial de una incubadora (solo últimas 24 horas)
-            async function updateIncubatorChart24h(historialPath, updateChartFn) {
-                const db = getDatabase();
-                const ref = dbRef(db, historialPath);
-                try {
-                    const snapshot = await get(ref);
-                    if (snapshot.exists()) {
-                        const historial = snapshot.val();
-                        const timestamps = [];
-                        const temperatures = [];
-                        const humidities = [];
-                        const now = new Date();
-                        Object.values(historial).forEach(reading => {
-                            if (reading.timestamp) {
-                                const readingDate = new Date(reading.timestamp);
-                                if (!isNaN(readingDate) && (now - readingDate) <= 24 * 60 * 60 * 1000) {
-                                    timestamps.push(readingDate.toLocaleTimeString());
-                                    temperatures.push(reading.PromT || 0);
-                                    humidities.push(reading.PromH || 0);
-                                }
-                            }
-                        });
-                        updateChartFn(timestamps, temperatures, humidities);
-                    }
-                } catch (error) {
-                    console.error('Error al actualizar gráfica:', error);
-                }
-            }
-
-            // Función para obtener y graficar historial de pH (solo últimas 24 horas)
-            async function updatePhChartAll() {
-                const db = getDatabase();
-                // Puedes cambiar esto si tienes historial de pH por incubadora
-                const ref = dbRef(db, 'historial');
-                try {
-                    const snapshot = await get(ref);
-                    if (snapshot.exists()) {
-                        const historial = snapshot.val();
-                        const timestamps = [];
-                        const phValues = [];
-                        const now = new Date();
-                        Object.values(historial).forEach(reading => {
-                            if (reading.timestamp) {
-                                const readingDate = new Date(reading.timestamp);
-                                // Solo incluir si es de las últimas 24 horas
-                                if ((now - readingDate) <= 24 * 60 * 60 * 1000) {
-                                    timestamps.push(readingDate.toLocaleTimeString());
-                                    phValues.push(reading.pH || 0);
-                                }
-                            }
-                        });
-                        updatePhChart(timestamps, phValues);
-                    }
-                } catch (error) {
-                    console.error('Error al actualizar gráfica de pH:', error);
-                }
-            }
-
-            // Función para obtener y graficar historial de pH de incubadora 3 (solo últimas 24 horas)
-            async function updatePhChart3() {
-                const db = getDatabase();
-                const ref = dbRef(db, 'Incu3');
-                try {
-                    const snapshot = await get(ref);
-                    if (snapshot.exists()) {
-                        const historial = snapshot.val();
-                        const timestamps = [];
-                        const phValues = [];
-                        const now = new Date();
-                        Object.values(historial).forEach(reading => {
-                            if (reading.timestamp) {
-                                const readingDate = new Date(reading.timestamp);
-                                if ((now - readingDate) <= 24 * 60 * 60 * 1000) {
-                                    timestamps.push(readingDate.toLocaleTimeString());
-                                    phValues.push(reading.pH || 0);
-                                }
-                            }
-                        });
-                        if (window.updatePhChart3) {
-                            window.updatePhChart3(timestamps, phValues);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error al actualizar gráfica de pH 3:', error);
-                }
-            }
-
-            // Función para actualizar todas las gráficas
-            function updateAllCharts() {
-                // Incubadora 1: historial global, ya funciona
-                updateAreaChartWithLatestData();
-                // Incubadora 2 y 3: solo últimas 24 horas
-                updateIncubatorChart24h('Incu2', updateAreaChart2);
-                updateIncubatorChart24h('Incu3', updateAreaChart3);
-                updatePhChartAll();
-                updatePhChart3(); // <-- Agregado para pH de incubadora 3
-            }
-
-            // Actualizar al cargar la página
-            updateAllCharts();
-            // Actualizar cada 30 minutos (1800000 ms)
-
-            updateImages();
-            setInterval(updateImages, 15000);
-
-            // Mover estas declaraciones después de que el DOM esté listo
-            document.addEventListener('DOMContentLoaded', async () => {
-                // Solicitar permisos de notificación al cargar la página
-                await requestNotificationPermission();
-                
-                // Inicializar el audio
-                const audio = document.getElementById('alertSound');
-                if (audio) {
-                    // Intentar reproducir y silenciar inmediatamente para "desbloquear" el audio
-                    audio.volume = 0;
-                    audio.play().then(() => {
-                        audio.pause();
-                        audio.currentTime = 0;
-                        audio.volume = 1;
-                        enableAudio(); // Habilitar el audio para futuras notificaciones
-                    }).catch(e => console.log('Error al inicializar audio:', e));
-                }
-
-                const button = document.getElementById('toggleCascada');
-                
-                // Escuchar el estado actual desde Firebase
-                onValue(cascadaRef, (snapshot) => {
-                    cascadaState = snapshot.val() || "OFF";
-                    button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
-                });
-
-                // Manejar el clic en el botón
-                button.addEventListener('click', () => {
-                    // Alternar el estado
-                    const newState = cascadaState === "ON" ? "OFF" : "ON";
-
-                    // Actualizar el estado en Firebase
-                    set(cascadaRef, newState)
-                        .then(() => {
-                            console.log(`Estado de cascada cambiado a: ${newState}`);
-                        })
-                        .catch((error) => {
-                            console.error ("Error al actualizar el estado de cascada:", error);
-                        });
-                });
-
-                // Agregar el código del botón CSV aquí
-                document.getElementById("downloadCSV").addEventListener("click", async () => {
-                    try {
-                        const csvContent = await generateCSV();
-                        const blob = new Blob([csvContent], { type: "text/csv" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = "historial_sensores.csv";
-                        a.click();
-                        URL.revokeObjectURL(url);
-                    } catch (error) {
-                        console.error("Error al generar CSV:", error);
-                    }
-                });
-
-                // Guardar en historial los datos de Incu2 e Incu3 (incluyendo pH de Incu3) al recargar la página
-                async function saveCurrentDataToHistorial() {
-                    // Incubadora 2
-                    const snapshot2 = await get(dataRef2);
-                    if (snapshot2.exists()) {
-                        const data2 = snapshot2.val();
-                        const registro2 = {
-                            ...data2,
-                            timestamp: new Date().toISOString(),
-                            origen: 'Incu2'
-                        };
-                        push(historialRef, registro2).then(() => {
-                            console.log('Datos Incu2 guardados en historial');
-                        }).catch(error => {
-                            console.error('Error al guardar Incu2 en historial:', error);
-                        });
-                    }
-                    // Incubadora 3
-                    const snapshot3 = await get(dataRef3);
-                    if (snapshot3.exists()) {
-                        const data3 = snapshot3.val();
-                        const registro3 = {
-                            ...data3,
-                            timestamp: new Date().toISOString(),
-                            origen: 'Incu3'
-                        };
-                        push(historialRef, registro3).then(() => {
-                            console.log('Datos Incu3 guardados en historial');
-                        }).catch(error => {
-                            console.error('Error al guardar Incu3 en historial:', error);
-                        });
-                    }
-                }
-                // Llamar al guardar al cargar la página
-                saveCurrentDataToHistorial();
+            // Inicializar el toast con Bootstrap
+            const toast = new bootstrap.Toast(toastElement, {
+                animation: true,
+                autohide: true,
+                delay: 5000
             });
 
-            // Después de definir las funciones updateAreaChart, updateAreaChart2 y updateAreaChart3 en el script principal, asegúrate de exponerlas al scope global:
-            window.updateAreaChart = updateAreaChart;
-            window.updateAreaChart2 = updateAreaChart2;
-            window.updateAreaChart3 = updateAreaChart3;
-          </script>
-          <style>
-            .sensor-data {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-            }
-            .sensor-card {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 5px;
-                padding: 20px;
-                width: 200px;
-                text-align: center;
-            }
-            .sensor-card h3 {
-                margin-bottom: 10px;
-            }
-            .sensor-card p {
-                font-size: 1.2em;
-                margin: 0;
-            }
-            /* Estilos para las imágenes de las incubadoras */
-            .card-body img {
-                max-height: 300px;
-                width: 100%;
-                object-fit: cover;
-                border-radius: 4px;
-            }
-            /* Asegurar que las tarjetas de imágenes tengan la misma altura */
-            .card.mb-4 {
-                height: 100%;
-            }
+            // Mostrar el toast
+            toast.show();
 
-            /* Estilos para las notificaciones toast */
-            .toast-container {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1060;
-            }
-
-            .toast {
-                min-width: 300px;
-                margin-bottom: 10px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                animation: slideIn 0.3s ease-out;
-            }
-
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
+            // Reproducir sonido solo si está habilitado y el tipo es 'danger' o 'warning'
+            if (audioEnabled && (type === 'danger' || type === 'warning')) {
+                const audio = document.getElementById('alertSound');
+                if (audio) {
+                    audio.currentTime = 0; // Reiniciar el audio si ya estaba reproduciéndose
+                    audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
                 }
             }
 
-            .toast.success {
-                border-left: 4px solid #198754;
+            // Eliminar el toast del DOM después de ocultarse
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
+
+        // Manejar la interacción inicial del usuario
+        document.addEventListener('click', function initAudio() {
+            enableAudio();
+            // Remover el listener después de la primera interacción
+            document.removeEventListener('click', initAudio);
+        }, { once: true });
+
+        // Función para validar si un valor es válido
+        function isValidValue(value) {
+            return value !== null &&
+                value !== undefined &&
+                !isNaN(value) &&
+                value !== 0 && // En el código del ESP32, 0 se usa como indicador de error para algunos sensores
+                value !== -1;  // En el código del ESP32, -1 se usa como indicador de error para promedios
+        }
+
+        // Función para actualizar las notificaciones
+        function updateNotifications(data) {
+            const tempCard = document.getElementById('tempCard');
+            const phCard = document.getElementById('phCard');
+            const humCard = document.getElementById('humCard');
+            const tempCardBody = document.getElementById('tempCardBody');
+            const phCardBody = document.getElementById('phCardBody');
+            const humCardBody = document.getElementById('humCardBody');
+
+            // Verificar temperatura
+            const temp = parseFloat(data.PromT);
+            if (!isValidValue(temp)) {
+                tempCard.className = 'card bg-warning text-white mb-4';
+                tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
+                showNotification('Error de Sensor',
+                    'Los datos de temperatura son inválidos o no están disponibles',
+                    'warning');
+            } else if (temp < 20 || temp > 35) {
+                tempCard.className = 'card bg-danger text-white mb-4';
+                tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
+                showNotification('¡Alerta de Temperatura!',
+                    `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
+                    'danger');
+            } else {
+                tempCard.className = 'card bg-success text-white mb-4';
+                tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
             }
 
-            .toast.danger {
-                border-left: 4px solid #dc3545;
+            // Verificar pH
+            const ph = parseFloat(data.pH);
+            if (!isValidValue(ph)) {
+                phCard.className = 'card bg-warning text-white mb-4';
+                phCardBody.textContent = '⚠️ Error: Datos de pH inválidos';
+                showNotification('Error de Sensor',
+                    'Los datos de pH son inválidos o no están disponibles',
+                    'warning');
+            } else if (ph < 6.2 || ph > 7.8) {
+                phCard.className = 'card bg-danger text-white mb-4';
+                phCardBody.textContent = `¡Alerta! pH ${ph} fuera de rango (6.2-7.8)`;
+                showNotification('¡Alerta de pH!',
+                    `El pH está en ${ph} (Rango ideal: 6.2-7.8)`,
+                    'danger');
+            } else {
+                phCard.className = 'card bg-success text-white mb-4';
+                phCardBody.textContent = `pH OK: ${ph}`;
             }
 
-            .toast.warning {
-                border-left: 4px solid #ffc107;
+            // Verificar humedad
+            const hum = parseFloat(data.PromH);
+            if (!isValidValue(hum)) {
+                humCard.className = 'card bg-warning text-white mb-4';
+                humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
+                showNotification('Error de Sensor',
+                    'Los datos de humedad son inválidos o no están disponibles',
+                    'warning');
+            } else if (hum < 70) {
+                humCard.className = 'card bg-danger text-white mb-4';
+                humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
+                showNotification('¡Alerta de Humedad!',
+                    `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
+                    'danger');
+            } else {
+                humCard.className = 'card bg-success text-white mb-4';
+                humCardBody.textContent = `Humedad OK: ${hum}%`;
+            }
+        }
+
+        // Función para actualizar las notificaciones de la Incubadora 2
+        function updateNotificationsIncu2(data) {
+            const tempCard = document.getElementById('tempCard2');
+            const humCard = document.getElementById('humCard2');
+            const tempCardBody = document.getElementById('tempCardBody2');
+            const humCardBody = document.getElementById('humCardBody2');
+
+            // Verificar temperatura
+            const temp = parseFloat(data.PromT);
+            if (!isValidValue(temp)) {
+                tempCard.className = 'card bg-warning text-white mb-4';
+                tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
+                showNotification('Error de Sensor - Incubadora 2',
+                    'Los datos de temperatura son inválidos o no están disponibles',
+                    'warning');
+            } else if (temp < 20 || temp > 35) {
+                tempCard.className = 'card bg-danger text-white mb-4';
+                tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
+                showNotification('¡Alerta de Temperatura! - Incubadora 2',
+                    `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
+                    'danger');
+            } else {
+                tempCard.className = 'card bg-success text-white mb-4';
+                tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
             }
 
-            .toast-header {
-                background-color: transparent;
-                border-bottom: 1px solid rgba(0,0,0,.1);
+            // Verificar humedad
+            const hum = parseFloat(data.PromH);
+            if (!isValidValue(hum)) {
+                humCard.className = 'card bg-warning text-white mb-4';
+                humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
+                showNotification('Error de Sensor - Incubadora 2',
+                    'Los datos de humedad son inválidos o no están disponibles',
+                    'warning');
+            } else if (hum < 70) {
+                humCard.className = 'card bg-danger text-white mb-4';
+                humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
+                showNotification('¡Alerta de Humedad! - Incubadora 2',
+                    `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
+                    'danger');
+            } else {
+                humCard.className = 'card bg-success text-white mb-4';
+                humCardBody.textContent = `Humedad OK: ${hum}%`;
+            }
+        }
+
+        // Función para actualizar las notificaciones de la Incubadora 3
+        function updateNotificationsIncu3(data) {
+            const tempCard = document.getElementById('tempCard3');
+            const humCard = document.getElementById('humCard3');
+            const phCard = document.getElementById('phCard3');
+            const tempCardBody = document.getElementById('tempCardBody3');
+            const humCardBody = document.getElementById('humCardBody3');
+            const phCardBody = document.getElementById('phCardBody3');
+
+            // Verificar temperatura
+            const temp = parseFloat(data.PromT);
+            if (!isValidValue(temp)) {
+                tempCard.className = 'card bg-warning text-white mb-4';
+                tempCardBody.textContent = '⚠️ Error: Datos de temperatura inválidos';
+                showNotification('Error de Sensor - Incubadora 3',
+                    'Los datos de temperatura son inválidos o no están disponibles',
+                    'warning');
+            } else if (temp < 20 || temp > 35) {
+                tempCard.className = 'card bg-danger text-white mb-4';
+                tempCardBody.textContent = `¡Alerta! Temperatura ${temp}°C fuera de rango (20-35°C)`;
+                showNotification('¡Alerta de Temperatura! - Incubadora 3',
+                    `La temperatura está en ${temp}°C (Rango ideal: 20-35°C)`,
+                    'danger');
+            } else {
+                tempCard.className = 'card bg-success text-white mb-4';
+                tempCardBody.textContent = `Temperatura OK: ${temp}°C`;
             }
 
-            .toast-body {
-                padding: 12px 15px;
-                font-size: 14px;
+            // Verificar humedad
+            const hum = parseFloat(data.PromH);
+            if (!isValidValue(hum)) {
+                humCard.className = 'card bg-warning text-white mb-4';
+                humCardBody.textContent = '⚠️ Error: Datos de humedad inválidos';
+                showNotification('Error de Sensor - Incubadora 3',
+                    'Los datos de humedad son inválidos o no están disponibles',
+                    'warning');
+            } else if (hum < 70) {
+                humCard.className = 'card bg-danger text-white mb-4';
+                humCardBody.textContent = `¡Alerta! Humedad ${hum}% debajo del 70%`;
+                showNotification('¡Alerta de Humedad! - Incubadora 3',
+                    `La humedad está en ${hum}% (Mínimo requerido: 70%)`,
+                    'danger');
+            } else {
+                humCard.className = 'card bg-success text-white mb-4';
+                humCardBody.textContent = `Humedad OK: ${hum}%`;
             }
 
-            .btn-close {
-                font-size: 12px;
-                opacity: 0.75;
+            // Verificar pH
+            const ph = parseFloat(data.pH);
+            if (!isValidValue(ph)) {
+                phCard.className = 'card bg-warning text-white mb-4';
+                phCardBody.textContent = '⚠️ Error: Datos de pH inválidos';
+                showNotification('Error de Sensor - Incubadora 3',
+                    'Los datos de pH son inválidos o no están disponibles',
+                    'warning');
+            } else if (ph < 6.2 || ph > 7.8) {
+                phCard.className = 'card bg-danger text-white mb-4';
+                phCardBody.textContent = `¡Alerta! pH ${ph} fuera de rango (6.2-7.8)`;
+                showNotification('¡Alerta de pH! - Incubadora 3',
+                    `El pH está en ${ph} (Rango ideal: 6.2-7.8)`,
+                    'danger');
+            } else {
+                phCard.className = 'card bg-success text-white mb-4';
+                phCardBody.textContent = `pH OK: ${ph}`;
+            }
+        }
+
+        // --- FUNCIONES PARA ACTUALIZAR GRÁFICAS DE INCUBADORAS Y PH ---
+
+        // Función para obtener y graficar historial de una incubadora
+        async function updateIncubatorChart(historialPath, updateChartFn, tempKey = 'PromT', humKey = 'PromH') {
+            const db = getDatabase();
+            const ref = dbRef(db, historialPath);
+            try {
+                const snapshot = await get(ref);
+                if (snapshot.exists()) {
+                    const historial = snapshot.val();
+                    const timestamps = [];
+                    const temperatures = [];
+                    const humidities = [];
+                    Object.values(historial).forEach(reading => {
+                        timestamps.push(new Date(reading.timestamp).toLocaleTimeString());
+                        temperatures.push(reading[tempKey] || 0);
+                        humidities.push(reading[humKey] || 0);
+                    });
+                    updateChartFn(timestamps, temperatures, humidities);
+                }
+            } catch (error) {
+                console.error('Error al actualizar gráfica:', error);
+            }
+        }
+
+        // Función para obtener y graficar historial de una incubadora (solo últimas 24 horas)
+        async function updateIncubatorChart24h(historialPath, updateChartFn) {
+            const db = getDatabase();
+            const ref = dbRef(db, historialPath);
+            try {
+                const snapshot = await get(ref);
+                if (snapshot.exists()) {
+                    const historial = snapshot.val();
+                    const timestamps = [];
+                    const temperatures = [];
+                    const humidities = [];
+                    const now = new Date();
+                    Object.values(historial).forEach(reading => {
+                        if (reading.timestamp) {
+                            const readingDate = new Date(reading.timestamp);
+                            if (!isNaN(readingDate) && (now - readingDate) <= 24 * 60 * 60 * 1000) {
+                                timestamps.push(readingDate.toLocaleTimeString());
+                                temperatures.push(reading.PromT || 0);
+                                humidities.push(reading.PromH || 0);
+                            }
+                        }
+                    });
+                    updateChartFn(timestamps, temperatures, humidities);
+                }
+            } catch (error) {
+                console.error('Error al actualizar gráfica:', error);
+            }
+        }
+
+        // Función para obtener y graficar historial de pH (solo últimas 24 horas y pH < 7.3)
+        async function updatePhChartAll() {
+            const db = getDatabase();
+            // Puedes cambiar esto si tienes historial de pH por incubadora
+            const ref = dbRef(db, 'historial');
+            try {
+                const snapshot = await get(ref);
+                if (snapshot.exists()) {
+                    const historial = snapshot.val();
+                    const timestamps = [];
+                    const phValues = [];
+                    const now = new Date();
+                    Object.values(historial).forEach(reading => {
+                        if (reading.timestamp && reading.pH) {
+                            const readingDate = new Date(reading.timestamp);
+                            const phValue = parseFloat(reading.pH);
+                            // Solo incluir si es de las últimas 24 horas Y pH < 7.3
+                            if (!isNaN(readingDate) &&
+                                (now - readingDate) <= 24 * 60 * 60 * 1000 &&
+                                !isNaN(phValue) &&
+                                phValue < 7.3 &&
+                                phValue > 0) {
+                                timestamps.push(readingDate.toLocaleTimeString());
+                                phValues.push(phValue);
+                            }
+                        }
+                    });
+                    updatePhChart(timestamps, phValues);
+                }
+            } catch (error) {
+                console.error('Error al actualizar gráfica de pH:', error);
+            }
+        }
+
+        // Función para obtener y graficar historial de pH de incubadora 3 (solo últimas 24 horas)
+        async function updatePhChart3() {
+            const db = getDatabase();
+            const ref = dbRef(db, 'Incu3');
+            try {
+                const snapshot = await get(ref);
+                if (snapshot.exists()) {
+                    const historial = snapshot.val();
+                    const timestamps = [];
+                    const phValues = [];
+                    const now = new Date();
+                    Object.values(historial).forEach(reading => {
+                        if (reading.timestamp) {
+                            const readingDate = new Date(reading.timestamp);
+                            if ((now - readingDate) <= 24 * 60 * 60 * 1000) {
+                                timestamps.push(readingDate.toLocaleTimeString());
+                                phValues.push(reading.pH || 0);
+                            }
+                        }
+                    });
+                    if (window.updatePhChart3) {
+                        window.updatePhChart3(timestamps, phValues);
+                    }
+                }
+            } catch (error) {
+                console.error('Error al actualizar gráfica de pH 3:', error);
+            }
+        }
+
+        // Función para actualizar todas las gráficas
+        function updateAllCharts() {
+            // Incubadora 1: historial global, ya funciona
+            updateAreaChartWithLatestData();
+            // Incubadora 2 y 3: solo últimas 24 horas
+            updateIncubatorChart24h('Incu2', updateAreaChart2);
+            updateIncubatorChart24h('Incu3', updateAreaChart3);
+            updatePhChartAll();
+            updatePhChart3(); // <-- Agregado para pH de incubadora 3
+        }
+
+        // Actualizar al cargar la página
+        updateAllCharts();
+        // Actualizar gráficas de pH cada 5 minutos (300000 ms)
+        setInterval(() => {
+            updatePhChartAll();
+            updatePhChart3();
+        }, 5 * 60 * 1000);
+
+        updateImages();
+        setInterval(updateImages, 15000);
+
+        // Mover estas declaraciones después de que el DOM esté listo
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Solicitar permisos de notificación al cargar la página
+            await requestNotificationPermission();
+
+            // Inicializar el audio
+            const audio = document.getElementById('alertSound');
+            if (audio) {
+                // Intentar reproducir y silenciar inmediatamente para "desbloquear" el audio
+                audio.volume = 0;
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 1;
+                    enableAudio(); // Habilitar el audio para futuras notificaciones
+                }).catch(e => console.log('Error al inicializar audio:', e));
             }
 
-            .btn-close:hover {
+            const button = document.getElementById('toggleCascada');
+
+            // Escuchar el estado actual desde Firebase
+            onValue(cascadaRef, (snapshot) => {
+                cascadaState = snapshot.val() || "OFF";
+                button.innerText = cascadaState === "ON" ? "Desactivar Cascada" : "Activar Cascada";
+            });
+
+            // Manejar el clic en el botón
+            button.addEventListener('click', () => {
+                // Alternar el estado
+                const newState = cascadaState === "ON" ? "OFF" : "ON";
+
+                // Actualizar el estado en Firebase
+                set(cascadaRef, newState)
+                    .then(() => {
+                        console.log(`Estado de cascada cambiado a: ${newState}`);
+                    })
+                    .catch((error) => {
+                        console.error("Error al actualizar el estado de cascada:", error);
+                    });
+            });
+
+            // Agregar el código del botón CSV aquí
+            document.getElementById("downloadCSV").addEventListener("click", async () => {
+                try {
+                    const csvContent = await generateCSV();
+                    const blob = new Blob([csvContent], { type: "text/csv" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "historial_sensores.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                } catch (error) {
+                    console.error("Error al generar CSV:", error);
+                }
+            });
+
+            // Guardar en historial los datos de Incu2 e Incu3 (incluyendo pH de Incu3) al recargar la página
+            async function saveCurrentDataToHistorial() {
+                // Incubadora 2
+                const snapshot2 = await get(dataRef2);
+                if (snapshot2.exists()) {
+                    const data2 = snapshot2.val();
+                    const registro2 = {
+                        ...data2,
+                        timestamp: new Date().toISOString(),
+                        origen: 'Incu2'
+                    };
+                    push(historialRef, registro2).then(() => {
+                        console.log('Datos Incu2 guardados en historial');
+                    }).catch(error => {
+                        console.error('Error al guardar Incu2 en historial:', error);
+                    });
+                }
+                // Incubadora 3
+                const snapshot3 = await get(dataRef3);
+                if (snapshot3.exists()) {
+                    const data3 = snapshot3.val();
+                    const registro3 = {
+                        ...data3,
+                        timestamp: new Date().toISOString(),
+                        origen: 'Incu3'
+                    };
+                    push(historialRef, registro3).then(() => {
+                        console.log('Datos Incu3 guardados en historial');
+                    }).catch(error => {
+                        console.error('Error al guardar Incu3 en historial:', error);
+                    });
+                }
+            }
+            // Llamar al guardar al cargar la página
+            saveCurrentDataToHistorial();
+        });
+
+        // Después de definir las funciones updateAreaChart, updateAreaChart2 y updateAreaChart3 en el script principal, asegúrate de exponerlas al scope global:
+        window.updateAreaChart = updateAreaChart;
+        window.updateAreaChart2 = updateAreaChart2;
+        window.updateAreaChart3 = updateAreaChart3;
+    </script>
+    <style>
+        .sensor-data {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .sensor-card {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            width: 200px;
+            text-align: center;
+        }
+
+        .sensor-card h3 {
+            margin-bottom: 10px;
+        }
+
+        .sensor-card p {
+            font-size: 1.2em;
+            margin: 0;
+        }
+
+        /* Estilos para las imágenes de las incubadoras */
+        .card-body img {
+            max-height: 300px;
+            width: 100%;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        /* Asegurar que las tarjetas de imágenes tengan la misma altura */
+        .card.mb-4 {
+            height: 100%;
+        }
+
+        /* Estilos para las notificaciones toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1060;
+        }
+
+        .toast {
+            min-width: 300px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
                 opacity: 1;
             }
+        }
 
-            #Incubadora_1, #Incubadora_2, #Incubadora_3 {
-                transform: scaleY(-1);
-                -webkit-transform: scaleY(-1);
-                /* Para compatibilidad con navegadores antiguos */
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-            }
-        </style>
+        .toast.success {
+            border-left: 4px solid #198754;
+        }
 
-        <style>
-            .btn-cascada {
-                background-color: #007bff;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                font-size: 16px;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-            }
-        
-            .btn-cascada:hover {
-                background-color: #0056b3;
-            }
-        
-            .btn-cascada:active {
-                background-color: #003f7f;
-            }
-        </style>
-        <!-- Agregar el elemento de audio para la alerta -->
-        <audio id="alertSound">
-            <source src="assets/sounds/alert.mp3" type="audio/mp3">
-        </audio>
-    </head>
-    <body class="sb-nav-fixed">
-        <!-- Contenedor para las notificaciones toast -->
-        <div class="toast-container" id="toastContainer"></div>
-        
-        <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
-            <!-- Navbar Brand-->
-            <a class="navbar-brand ps-3" href="index.html">Monitoreo</a>
-            <!-- Sidebar Toggle-->
-            <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0"
-                id="sidebarToggle" href="#!"><i
-                    class="fas fa-bars"></i></button>
-            <!-- Navbar Search-->
-            <form
-                class="d-none d-md-inline-block form-inline ms-auto me-0 me-md-3 my-2 my-md-0">
-                <div class="input-group">
-                    <input class="form-control" type="text"
-                        placeholder="Search for..." aria-label="Search for..."
-                        aria-describedby="btnNavbarSearch" />
-                    <button class="btn btn-primary" id="btnNavbarSearch"
-                        type="button"><i class="fas fa-search"></i></button>
-                </div>
-            </form>
-            <!-- Navbar-->
-            <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" id="navbarDropdown"
-                        href="#" role="button" data-bs-toggle="dropdown"
-                        aria-expanded="false"><i
-                            class="fas fa-user fa-fw"></i></a>
-                    <ul class="dropdown-menu dropdown-menu-end"
-                        aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#!">Settings</a></li>
-                        <li><a class="dropdown-item" href="#!">Activity
-                                Log</a></li>
-                        <li><hr class="dropdown-divider" /></li>
-                        <li><a class="dropdown-item" href="#!">Logout</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-        <div id="layoutSidenav">
-            <div id="layoutSidenav_nav">
-                <nav class="sb-sidenav accordion sb-sidenav-dark"
-                    id="sidenavAccordion">
-                    <div class="sb-sidenav-menu">
-                        <div class="nav">
-                            <div class="sb-sidenav-menu-heading">Core</div>
-                            <a class="nav-link" href="index.html">
-                                <div class="sb-nav-link-icon"><i
-                                        class="fas fa-tachometer-alt"></i></div>
-                                Dashboard
-                            </a>
-                            <div class="sb-sidenav-menu-heading">Interface</div>
-                            <a class="nav-link collapsed" href="#"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#collapseLayouts"
-                                aria-expanded="false"
-                                aria-controls="collapseLayouts">
-                                <div class="sb-nav-link-icon"><i
-                                        class="fas fa-columns"></i></div>
-                                Layouts
-                                <div class="sb-sidenav-collapse-arrow"><i
-                                        class="fas fa-angle-down"></i></div>
-                            </a>
-                            <div class="collapse" id="collapseLayouts"
-                                aria-labelledby="headingOne"
-                                data-bs-parent="#sidenavAccordion">
-                                <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link"
-                                        href="layout-static.html">Static
-                                        Navigation</a>
-                                    <a class="nav-link"
-                                        href="layout-sidenav-light.html">Light
-                                        Sidenav</a>
-                                </nav>
-                            </div>
-                            <a class="nav-link collapsed" href="#"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#collapsePages"
-                                aria-expanded="false"
-                                aria-controls="collapsePages">
-                                <div class="sb-nav-link-icon"><i
-                                        class="fas fa-book-open"></i></div>
-                                Pages
-                                <div class="sb-sidenav-collapse-arrow"><i
-                                        class="fas fa-angle-down"></i></div>
-                            </a>
-                            <div class="collapse" id="collapsePages"
-                                aria-labelledby="headingTwo"
-                                data-bs-parent="#sidenavAccordion">
-                                <nav
-                                    class="sb-sidenav-menu-nested nav accordion"
-                                    id="sidenavAccordionPages">
-                                    <a class="nav-link collapsed" href="#"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#pagesCollapseAuth"
-                                        aria-expanded="false"
-                                        aria-controls="pagesCollapseAuth">
-                                        Authentication
-                                        <div
-                                            class="sb-sidenav-collapse-arrow"><i
-                                                class="fas fa-angle-down"></i></div>
-                                    </a>
-                                    <div class="collapse" id="pagesCollapseAuth"
-                                        aria-labelledby="headingOne"
-                                        data-bs-parent="#sidenavAccordionPages">
-                                        <nav class="sb-sidenav-menu-nested nav">
-                                            <a class="nav-link"
-                                                href="login.html">Login</a>
-                                            <a class="nav-link"
-                                                href="register.html">Register</a>
-                                            <a class="nav-link"
-                                                href="password.html">Forgot
-                                                Password</a>
-                                        </nav>
-                                    </div>
-                                    <a class="nav-link collapsed" href="#"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#pagesCollapseError"
-                                        aria-expanded="false"
-                                        aria-controls="pagesCollapseError">
-                                        Error
-                                        <div
-                                            class="sb-sidenav-collapse-arrow"><i
-                                                class="fas fa-angle-down"></i></div>
-                                    </a>
-                                    <div class="collapse"
-                                        id="pagesCollapseError"
-                                        aria-labelledby="headingOne"
-                                        data-bs-parent="#sidenavAccordionPages">
-                                        <nav class="sb-sidenav-menu-nested nav">
-                                            <a class="nav-link"
-                                                href="401.html">401 Page</a>
-                                            <a class="nav-link"
-                                                href="404.html">404 Page</a>
-                                            <a class="nav-link"
-                                                href="500.html">500 Page</a>
-                                        </nav>
-                                    </div>
-                                </nav>
-                            </div>
-                            <div class="sb-sidenav-menu-heading">Addons</div>
-                            <a class="nav-link" href="charts.html">
-                                <div class="sb-nav-link-icon"><i
-                                        class="fas fa-chart-area"></i></div>
-                                Charts
-                            </a>
-                            <a class="nav-link" href="tables.html">
-                                <div class="sb-nav-link-icon"><i
-                                        class="fas fa-table"></i></div>
-                                Tables
-                            </a>
-                        </div>
-                    </div>
-                    <div class="sb-sidenav-footer">
-                        <div class="small">Logged in as:</div>
-                        Lord Ranitas
-                    </div>
-                </nav>
+        .toast.danger {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast.warning {
+            border-left: 4px solid #ffc107;
+        }
+
+        .toast-header {
+            background-color: transparent;
+            border-bottom: 1px solid rgba(0, 0, 0, .1);
+        }
+
+        .toast-body {
+            padding: 12px 15px;
+            font-size: 14px;
+        }
+
+        .btn-close {
+            font-size: 12px;
+            opacity: 0.75;
+        }
+
+        .btn-close:hover {
+            opacity: 1;
+        }
+
+        #Incubadora_1,
+        #Incubadora_2,
+        #Incubadora_3 {
+            transform: scaleY(-1);
+            -webkit-transform: scaleY(-1);
+            /* Para compatibilidad con navegadores antiguos */
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+
+    <style>
+        .btn-cascada {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-cascada:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-cascada:active {
+            background-color: #003f7f;
+        }
+    </style>
+    <!-- Agregar el elemento de audio para la alerta -->
+    <audio id="alertSound">
+        <source src="assets/sounds/alert.mp3" type="audio/mp3">
+    </audio>
+</head>
+
+<body class="sb-nav-fixed">
+    <!-- Contenedor para las notificaciones toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+        <!-- Navbar Brand-->
+        <a class="navbar-brand ps-3" href="index.html">Monitoreo</a>
+        <!-- Sidebar Toggle-->
+        <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!"><i
+                class="fas fa-bars"></i></button>
+        <!-- Navbar Search-->
+        <form class="d-none d-md-inline-block form-inline ms-auto me-0 me-md-3 my-2 my-md-0">
+            <div class="input-group">
+                <input class="form-control" type="text" placeholder="Search for..." aria-label="Search for..."
+                    aria-describedby="btnNavbarSearch" />
+                <button class="btn btn-primary" id="btnNavbarSearch" type="button"><i
+                        class="fas fa-search"></i></button>
             </div>
-            <div id="layoutSidenav_content">
-                <main>
-                    <div class="container-fluid px-4">
-
-                        <h1 class="mt-4">Dashboard</h1>
-                        <ol class="breadcrumb mb-4">
-                            <li class="breadcrumb-item active">Dashboard</li>
-                        </ol>
-                        
-                        <!-- Sección de Cámaras en línea horizontal -->
-                        <div class="row mt-4 mb-5">
-                            <!-- Incubadora 1 -->
-                            <div class="col-lg-4 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header">
-                                        <i class="fas fa-camera me-1"></i> Vista de la Incubadora 1 "CONTROL"
-                                    </div>
-                                    <div class="card-body text-center p-3">
-                                        <img src="" alt="Ultima foto tomada de la incubadora 1" id="Incubadora_1" class="img-fluid">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Incubadora 2 -->
-                            <div class="col-lg-4 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header">
-                                        <i class="fas fa-camera me-1"></i> Vista de la Incubadora 2
-                                    </div>
-                                    <div class="card-body text-center p-3">
-                                        <img src="" alt="Ultima foto tomada de la incubadora 2" id="Incubadora_2" class="img-fluid">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Incubadora 3 -->
-                            <div class="col-lg-4 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header">
-                                        <i class="fas fa-camera me-1"></i> Vista de la Incubadora 3
-                                    </div>
-                                    <div class="card-body text-center p-3">
-                                        <img src="" alt="Ultima foto tomada de la incubadora 3" id="Incubadora_3" class="img-fluid">
-                                    </div>
-                                </div>
-                            </div>
+        </form>
+        <!-- Navbar-->
+        <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown"
+                    aria-expanded="false"><i class="fas fa-user fa-fw"></i></a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                    <li><a class="dropdown-item" href="#!">Settings</a></li>
+                    <li><a class="dropdown-item" href="#!">Activity
+                            Log</a></li>
+                    <li>
+                        <hr class="dropdown-divider" />
+                    </li>
+                    <li><a class="dropdown-item" href="#!">Logout</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    <div id="layoutSidenav">
+        <div id="layoutSidenav_nav">
+            <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                <div class="sb-sidenav-menu">
+                    <div class="nav">
+                        <div class="sb-sidenav-menu-heading">Core</div>
+                        <a class="nav-link" href="index.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                            Dashboard
+                        </a>
+                        <div class="sb-sidenav-menu-heading">Interface</div>
+                        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
+                            data-bs-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts">
+                            <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
+                            Layouts
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne"
+                            data-bs-parent="#sidenavAccordion">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" href="layout-static.html">Static
+                                    Navigation</a>
+                                <a class="nav-link" href="layout-sidenav-light.html">Light
+                                    Sidenav</a>
+                            </nav>
                         </div>
-
-                        <hr class="mt-4 mb-5">
-
-                        <!-- Sección de Datos del Sensor Incubadora 1 -->
-                        <h1>Datos Incubadora 1 (Control)</h1>
-                        <div class="sensor-data">
-                            <div class="sensor-card">
-                                <h3>DS18</h3>
-                                <p id="DS18">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp1</h3>
-                                <p id="Temp1">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp2</h3>
-                                <p id="Temp2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp3</h3>
-                                <p id="Temp3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum1</h3>
-                                <p id="Hum1">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum2</h3>
-                                <p id="Hum2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum3</h3>
-                                <p id="Hum3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>PromT</h3>
-                                <p id="PromT">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>PromH</h3>
-                                <p id="PromH">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>pH</h3>
-                                <p id="pH">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <button id="toggleCascada" class="btn-cascada">Activar Cascada</button>
-                            </div>
-                            <div class="sensor-card">
-                                <button id="downloadCSV" class="btn-cascada">Descargar CSV</button>
-                            </div>
+                        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages"
+                            aria-expanded="false" aria-controls="collapsePages">
+                            <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
+                            Pages
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse" id="collapsePages" aria-labelledby="headingTwo"
+                            data-bs-parent="#sidenavAccordion">
+                            <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages">
+                                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
+                                    data-bs-target="#pagesCollapseAuth" aria-expanded="false"
+                                    aria-controls="pagesCollapseAuth">
+                                    Authentication
+                                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                                </a>
+                                <div class="collapse" id="pagesCollapseAuth" aria-labelledby="headingOne"
+                                    data-bs-parent="#sidenavAccordionPages">
+                                    <nav class="sb-sidenav-menu-nested nav">
+                                        <a class="nav-link" href="login.html">Login</a>
+                                        <a class="nav-link" href="register.html">Register</a>
+                                        <a class="nav-link" href="password.html">Forgot
+                                            Password</a>
+                                    </nav>
+                                </div>
+                                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
+                                    data-bs-target="#pagesCollapseError" aria-expanded="false"
+                                    aria-controls="pagesCollapseError">
+                                    Error
+                                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                                </a>
+                                <div class="collapse" id="pagesCollapseError" aria-labelledby="headingOne"
+                                    data-bs-parent="#sidenavAccordionPages">
+                                    <nav class="sb-sidenav-menu-nested nav">
+                                        <a class="nav-link" href="401.html">401 Page</a>
+                                        <a class="nav-link" href="404.html">404 Page</a>
+                                        <a class="nav-link" href="500.html">500 Page</a>
+                                    </nav>
+                                </div>
+                            </nav>
                         </div>
+                        <div class="sb-sidenav-menu-heading">Addons</div>
+                        <a class="nav-link" href="charts.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-chart-area"></i></div>
+                            Charts
+                        </a>
+                        <a class="nav-link" href="tables.html">
+                            <div class="sb-nav-link-icon"><i class="fas fa-table"></i></div>
+                            Tables
+                        </a>
+                    </div>
+                </div>
+                <div class="sb-sidenav-footer">
+                    <div class="small">Logged in as:</div>
+                    Lord Ranitas
+                </div>
+            </nav>
+        </div>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
 
-                        <!-- Sección de Datos del Sensor Incubadora 2 -->
-                        <h1 class="mt-5">Datos Incubadora 2</h1>
-                        <div class="sensor-data">
-                            <div class="sensor-card">
-                                <h3>DS18</h3>
-                                <p id="DS18_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp1</h3>
-                                <p id="Temp1_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp2</h3>
-                                <p id="Temp2_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp3</h3>
-                                <p id="Temp3_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum1</h3>
-                                <p id="Hum1_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum2</h3>
-                                <p id="Hum2_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum3</h3>
-                                <p id="Hum3_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>PromT</h3>
-                                <p id="PromT_2">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>PromH</h3>
-                                <p id="PromH_2">0</p>
+                    <h1 class="mt-4">Dashboard</h1>
+                    <ol class="breadcrumb mb-4">
+                        <li class="breadcrumb-item active">Dashboard</li>
+                    </ol>
+
+                    <!-- Sección de Cámaras en línea horizontal -->
+                    <div class="row mt-4 mb-5">
+                        <!-- Incubadora 1 -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <i class="fas fa-camera me-1"></i> Vista de la Incubadora 1 "CONTROL"
+                                </div>
+                                <div class="card-body text-center p-3">
+                                    <img src="" alt="Ultima foto tomada de la incubadora 1" id="Incubadora_1"
+                                        class="img-fluid">
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Sección de Datos del Sensor Incubadora 3 -->
-                        <h1 class="mt-5">Datos Incubadora 3</h1>
-                        <div class="sensor-data mb-5">
-                            <div class="sensor-card">
-                                <h3>DS18</h3>
-                                <p id="DS18_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp1</h3>
-                                <p id="Temp1_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp2</h3>
-                                <p id="Temp2_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Temp3</h3>
-                                <p id="Temp3_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum1</h3>
-                                <p id="Hum1_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum2</h3>
-                                <p id="Hum2_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>Hum3</h3>
-                                <p id="Hum3_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>PromT</h3>
-                                <p id="PromT_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>PromH</h3>
-                                <p id="PromH_3">0</p>
-                            </div>
-                            <div class="sensor-card">
-                                <h3>pH</h3>
-                                <p id="pH_3">0</p>
-                            </div>
-                        </div>
-                        <!-- Cards de notificación Incubadora 1 (Control) -->
-                        <h2 class="mt-4">Estado Incubadora 1 (Control)</h2>
-                        <div class="row mb-4">
-                            <div class="col-xl-3 col-md-6">
-                                <div id="tempCard" class="card bg-success text-white mb-4">
-                                    <div id="tempCardBody" class="card-body">Estado de Temperatura</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 20-35°C</div>
-                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
-                                    </div>
+                        <!-- Incubadora 2 -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <i class="fas fa-camera me-1"></i> Vista de la Incubadora 2
                                 </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="phCard" class="card bg-success text-white mb-4">
-                                    <div id="phCardBody" class="card-body">Estado del pH</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 6.2-7.8</div>
-                                        <div class="small text-white"><i class="fas fa-flask"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="humCard" class="card bg-success text-white mb-4">
-                                    <div id="humCardBody" class="card-body">Estado de Humedad</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Mínimo requerido: 70%</div>
-                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
-                                    </div>
+                                <div class="card-body text-center p-3">
+                                    <img src="" alt="Ultima foto tomada de la incubadora 2" id="Incubadora_2"
+                                        class="img-fluid">
                                 </div>
                             </div>
                         </div>
-                        <!-- Cards de notificación Incubadora 2 -->
-                        <h2 class="mt-4">Estado Incubadora 2</h2>
-                        <div class="row mb-4">
-                            <div class="col-xl-3 col-md-6">
-                                <div id="tempCard2" class="card bg-success text-white mb-4">
-                                    <div id="tempCardBody2" class="card-body">Estado de Temperatura</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 20-35°C</div>
-                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
-                                    </div>
+
+                        <!-- Incubadora 3 -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <i class="fas fa-camera me-1"></i> Vista de la Incubadora 3
                                 </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="humCard2" class="card bg-success text-white mb-4">
-                                    <div id="humCardBody2" class="card-body">Estado de Humedad</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Mínimo requerido: 70%</div>
-                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Cards de notificación Incubadora 3 -->
-                        <h2 class="mt-4">Estado Incubadora 3</h2>
-                        <div class="row mb-4">
-                            <div class="col-xl-3 col-md-6">
-                                <div id="tempCard3" class="card bg-success text-white mb-4">
-                                    <div id="tempCardBody3" class="card-body">Estado de Temperatura</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 20-35°C</div>
-                                        <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="humCard3" class="card bg-success text-white mb-4">
-                                    <div id="humCardBody3" class="card-body">Estado de Humedad</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Mínimo requerido: 70%</div>
-                                        <div class="small text-white"><i class="fas fa-tint"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div id="phCard3" class="card bg-success text-white mb-4">
-                                    <div id="phCardBody3" class="card-body">Estado del pH</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Rango ideal: 6.2-7.8</div>
-                                        <div class="small text-white"><i class="fas fa-flask"></i></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Gráficas de temperatura y humedad para cada incubadora -->
-                        <div class="row">
-                            <div class="col-xl-4">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-area me-1"></i>
-                                        Historial de Temperatura y Humedad Incubadora 1
-                                    </div>
-                                    <div class="card-body"><canvas id="myAreaChart" width="100%" height="80"></canvas></div>
-                                </div>
-                            </div>
-                            <div class="col-xl-4">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-area me-1"></i>
-                                        Historial de Temperatura y Humedad Incubadora 2
-                                    </div>
-                                    <div class="card-body"><canvas id="myAreaChart2" width="100%" height="80"></canvas></div>
-                                </div>
-                            </div>
-                            <div class="col-xl-4">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-area me-1"></i>
-                                        Historial de Temperatura y Humedad Incubadora 3
-                                    </div>
-                                    <div class="card-body"><canvas id="myAreaChart3" width="100%" height="80"></canvas></div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Gráficas de pH para incubadora 1 y 3 -->
-                        <div class="row">
-                            <div class="col-xl-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-line me-1"></i>
-                                        Historial de pH de incubadora 1 y 2
-                                    </div>
-                                    <div class="card-body"><canvas id="myPhChart" width="100%" height="80"></canvas></div>
-                                </div>
-                            </div>
-                            <div class="col-xl-6">
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-line me-1"></i>
-                                        Historial de pH de incubadora 3
-                                    </div>
-                                    <div class="card-body"><canvas id="myPhChart3" width="100%" height="80"></canvas></div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Sección de filtros -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <i class="fas fa-filter me-1"></i>
-                                Filtros de monitoreo
-                            </div>
-                            <div class="card-body">
-                                <form class="row g-3">
-                                    <!-- Eliminar el combobox de incubadora -->
-                                    <div class="col-md-4">
-                                        <label for="startTime" class="form-label">Desde</label>
-                                        <input type="datetime-local" id="startTime" class="form-control" />
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="endTime" class="form-label">Hasta</label>
-                                        <input type="datetime-local" id="endTime" class="form-control"
-                                    </div>
-                                    <div class="col-md-4 d-flex align-items-end">
-                                        <button type="button" id="applyFilter" class="btn btn-primary w-100">Aplicar filtro</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                        <!-- Sección de gráficas filtradas -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <i class="fas fa-filter me-1"></i>
-                                Gráficas filtradas por incubadora y rango de tiempo
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <canvas id="filteredTempChart" width="100%" height="60"></canvas>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <canvas id="filteredHumChart" width="100%" height="60"></canvas>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <canvas id="filteredPhChart" width="100%" height="60"></canvas>
-                                    </div>
+                                <div class="card-body text-center p-3">
+                                    <img src="" alt="Ultima foto tomada de la incubadora 3" id="Incubadora_3"
+                                        class="img-fluid">
                                 </div>
                             </div>
                         </div>
                     </div>
-                </main>
-                <footer class="py-4 bg-light mt-auto">
-                    <div class="container-fluid px-4">
-                        <div
-                            class="d-flex align-items-center justify-content-between small">
-                            <div class="text-muted">Copyright &copy; 2025</div>
-                            <div>
-                                <!--
+
+                    <hr class="mt-4 mb-5">
+
+                    <!-- Sección de Datos del Sensor Incubadora 1 -->
+                    <h1>Datos Incubadora 1 (Control)</h1>
+                    <div class="sensor-data">
+                        <div class="sensor-card">
+                            <h3>DS18</h3>
+                            <p id="DS18">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp1</h3>
+                            <p id="Temp1">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp2</h3>
+                            <p id="Temp2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp3</h3>
+                            <p id="Temp3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum1</h3>
+                            <p id="Hum1">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum2</h3>
+                            <p id="Hum2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum3</h3>
+                            <p id="Hum3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>PromT</h3>
+                            <p id="PromT">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>PromH</h3>
+                            <p id="PromH">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>pH</h3>
+                            <p id="pH">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <button id="toggleCascada" class="btn-cascada">Activar Cascada</button>
+                        </div>
+                        <div class="sensor-card">
+                            <button id="downloadCSV" class="btn-cascada">Descargar CSV</button>
+                        </div>
+                    </div>
+
+                    <!-- Sección de Datos del Sensor Incubadora 2 -->
+                    <h1 class="mt-5">Datos Incubadora 2</h1>
+                    <div class="sensor-data">
+                        <div class="sensor-card">
+                            <h3>DS18</h3>
+                            <p id="DS18_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp1</h3>
+                            <p id="Temp1_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp2</h3>
+                            <p id="Temp2_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp3</h3>
+                            <p id="Temp3_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum1</h3>
+                            <p id="Hum1_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum2</h3>
+                            <p id="Hum2_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum3</h3>
+                            <p id="Hum3_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>PromT</h3>
+                            <p id="PromT_2">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>PromH</h3>
+                            <p id="PromH_2">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Sección de Datos del Sensor Incubadora 3 -->
+                    <h1 class="mt-5">Datos Incubadora 3</h1>
+                    <div class="sensor-data mb-5">
+                        <div class="sensor-card">
+                            <h3>DS18</h3>
+                            <p id="DS18_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp1</h3>
+                            <p id="Temp1_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp2</h3>
+                            <p id="Temp2_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Temp3</h3>
+                            <p id="Temp3_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum1</h3>
+                            <p id="Hum1_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum2</h3>
+                            <p id="Hum2_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>Hum3</h3>
+                            <p id="Hum3_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>PromT</h3>
+                            <p id="PromT_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>PromH</h3>
+                            <p id="PromH_3">0</p>
+                        </div>
+                        <div class="sensor-card">
+                            <h3>pH</h3>
+                            <p id="pH_3">0</p>
+                        </div>
+                    </div>
+                    <!-- Cards de notificación Incubadora 1 (Control) -->
+                    <h2 class="mt-4">Estado Incubadora 1 (Control)</h2>
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div id="tempCard" class="card bg-success text-white mb-4">
+                                <div id="tempCardBody" class="card-body">Estado de Temperatura</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Rango ideal: 20-35°C</div>
+                                    <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div id="phCard" class="card bg-success text-white mb-4">
+                                <div id="phCardBody" class="card-body">Estado del pH</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Rango ideal: 6.2-7.8</div>
+                                    <div class="small text-white"><i class="fas fa-flask"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div id="humCard" class="card bg-success text-white mb-4">
+                                <div id="humCardBody" class="card-body">Estado de Humedad</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Mínimo requerido: 70%</div>
+                                    <div class="small text-white"><i class="fas fa-tint"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cards de notificación Incubadora 2 -->
+                    <h2 class="mt-4">Estado Incubadora 2</h2>
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div id="tempCard2" class="card bg-success text-white mb-4">
+                                <div id="tempCardBody2" class="card-body">Estado de Temperatura</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Rango ideal: 20-35°C</div>
+                                    <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div id="humCard2" class="card bg-success text-white mb-4">
+                                <div id="humCardBody2" class="card-body">Estado de Humedad</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Mínimo requerido: 70%</div>
+                                    <div class="small text-white"><i class="fas fa-tint"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cards de notificación Incubadora 3 -->
+                    <h2 class="mt-4">Estado Incubadora 3</h2>
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6">
+                            <div id="tempCard3" class="card bg-success text-white mb-4">
+                                <div id="tempCardBody3" class="card-body">Estado de Temperatura</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Rango ideal: 20-35°C</div>
+                                    <div class="small text-white"><i class="fas fa-thermometer-half"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div id="humCard3" class="card bg-success text-white mb-4">
+                                <div id="humCardBody3" class="card-body">Estado de Humedad</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Mínimo requerido: 70%</div>
+                                    <div class="small text-white"><i class="fas fa-tint"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <div id="phCard3" class="card bg-success text-white mb-4">
+                                <div id="phCardBody3" class="card-body">Estado del pH</div>
+                                <div class="card-footer d-flex align-items-center justify-content-between">
+                                    <div class="small text-white">Rango ideal: 6.2-7.8</div>
+                                    <div class="small text-white"><i class="fas fa-flask"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Gráficas de temperatura y humedad para cada incubadora -->
+                    <div class="row">
+                        <div class="col-xl-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-area me-1"></i>
+                                    Historial de Temperatura y Humedad Incubadora 1
+                                </div>
+                                <div class="card-body"><canvas id="myAreaChart" width="100%" height="80"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-area me-1"></i>
+                                    Historial de Temperatura y Humedad Incubadora 2
+                                </div>
+                                <div class="card-body"><canvas id="myAreaChart2" width="100%" height="80"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-area me-1"></i>
+                                    Historial de Temperatura y Humedad Incubadora 3
+                                </div>
+                                <div class="card-body"><canvas id="myAreaChart3" width="100%" height="80"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Gráficas de pH para incubadora 1 y 3 -->
+                    <div class="row">
+                        <div class="col-xl-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-line me-1"></i>
+                                    Historial de pH de incubadora 1 y 2
+                                </div>
+                                <div class="card-body"><canvas id="myPhChart" width="100%" height="80"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-line me-1"></i>
+                                    Historial de pH de incubadora 3
+                                </div>
+                                <div class="card-body"><canvas id="myPhChart3" width="100%" height="80"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Sección de filtros -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-filter me-1"></i>
+                            Filtros de monitoreo
+                        </div>
+                        <div class="card-body">
+                            <form class="row g-3">
+                                <!-- Eliminar el combobox de incubadora -->
+                                <div class="col-md-4">
+                                    <label for="startTime" class="form-label">Desde</label>
+                                    <input type="datetime-local" id="startTime" class="form-control" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="endTime" class="form-label">Hasta</label>
+                                    <input type="datetime-local" id="endTime" class="form-control" </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="button" id="applyFilter" class="btn btn-primary w-100">Aplicar
+                                            filtro</button>
+                                    </div>
+                            </form>
+                        </div>
+                    </div>
+                    <!-- Sección de gráficas filtradas -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-filter me-1"></i>
+                            Gráficas filtradas por incubadora y rango de tiempo
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <canvas id="filteredTempChart" width="100%" height="60"></canvas>
+                                </div>
+                                <div class="col-md-4">
+                                    <canvas id="filteredHumChart" width="100%" height="60"></canvas>
+                                </div>
+                                <div class="col-md-4">
+                                    <canvas id="filteredPhChart" width="100%" height="60"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <footer class="py-4 bg-light mt-auto">
+                <div class="container-fluid px-4">
+                    <div class="d-flex align-items-center justify-content-between small">
+                        <div class="text-muted">Copyright &copy; 2025</div>
+                        <div>
+                            <!--
                                 <a href="#">Privacy Policy</a>
                                 &middot;
                                 <a href="#">Terms &amp; Conditions</a>
                                 -->
-                            </div>
                         </div>
                     </div>
-                </footer>
-            </div>
+                </div>
+            </footer>
         </div>
-        <script
-            src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
-            crossorigin="anonymous"></script>
-        <script src="js/scripts.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
-        <script src="assets/demo/chart-area-demo.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
-        <script src="js/datatables-simple-demo.js"></script>
-    </body>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+    <script src="js/scripts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
+    <script src="assets/demo/chart-area-demo.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js"
+        crossorigin="anonymous"></script>
+    <script src="js/datatables-simple-demo.js"></script>
+</body>
+
 </html>
