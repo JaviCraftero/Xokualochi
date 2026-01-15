@@ -375,6 +375,30 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   // --- Funciones para actualizar gráficas principales desde el historial global ---
+
+  // Función para actualizar gráfica de incubadora 1 (myAreaChart)
+  // Filtra registros que NO tienen campo 'origen' (son de Incu1) o que no son de Incu2/Incu3
+  async function updateAreaChart1FromHistorial() {
+    const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const json = await resp.json();
+    if (!json) return;
+    // Filtrar solo datos de Incubadora 1 (sin campo 'origen' o diferente de Incu2/Incu3)
+    const datos = Object.values(json).filter(r =>
+      (!r.origen || (r.origen !== 'Incu2' && r.origen !== 'Incu3')) &&
+      r.PromT > 0 && r.PromH > 0 && r.timestamp
+    );
+    // Ordenar por timestamp
+    datos.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    // Tomar los últimos 10 registros
+    const lastTen = datos.slice(-10);
+    const timestamps = lastTen.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const temps = lastTen.map(r => r.PromT);
+    const hums = lastTen.map(r => r.PromH);
+    window.updateAreaChart(timestamps, temps, hums);
+  }
+
   async function updateAreaChart2FromHistorial() {
     const url = 'https://ranitas-test-default-rtdb.firebaseio.com/historial.json';
     const resp = await fetch(url);
@@ -456,21 +480,26 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   // Llamar estas funciones al cargar la página
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    updateAreaChart1FromHistorial(); // <-- Gráfica de incubadora 1
     updateAreaChart2FromHistorial();
     updateAreaChart3FromHistorial();
     updatePhChart3FromHistorial();
-    updatePhChartFromHistorial(); // <-- Gráfica de pH incubadora 1 y 2
+    updatePhChartFromHistorial();
   } else {
     document.addEventListener('DOMContentLoaded', () => {
+      updateAreaChart1FromHistorial(); // <-- Gráfica de incubadora 1
       updateAreaChart2FromHistorial();
       updateAreaChart3FromHistorial();
       updatePhChart3FromHistorial();
-      updatePhChartFromHistorial(); // <-- Gráfica de pH incubadora 1 y 2
+      updatePhChartFromHistorial();
     });
   }
 
-  // Actualizar gráficas de pH cada 5 minutos
+  // Actualizar gráficas cada 5 minutos
   setInterval(() => {
+    updateAreaChart1FromHistorial();
+    updateAreaChart2FromHistorial();
+    updateAreaChart3FromHistorial();
     updatePhChartFromHistorial();
     updatePhChart3FromHistorial();
   }, 5 * 60 * 1000);
