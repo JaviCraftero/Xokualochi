@@ -631,17 +631,12 @@
             // Incubadora 2 y 3: solo últimas 24 horas
             updateIncubatorChart24h('Incu2', updateAreaChart2);
             updateIncubatorChart24h('Incu3', updateAreaChart3);
-            updatePhChartAll();
-            updatePhChart3(); // <-- Agregado para pH de incubadora 3
+            // NOTA: Las gráficas de pH se actualizan desde chart-area-demo.js
+            // para evitar conflictos de sobrescritura
         }
 
         // Actualizar al cargar la página
         updateAllCharts();
-        // Actualizar gráficas de pH cada 5 minutos (300000 ms)
-        setInterval(() => {
-            updatePhChartAll();
-            updatePhChart3();
-        }, 5 * 60 * 1000);
 
         updateImages();
         setInterval(updateImages, 15000);
